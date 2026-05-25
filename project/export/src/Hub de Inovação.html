@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Hub de Inovação e Pesquisa · Recife</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet"/>
+<meta name="ext-resource-dependency" content="logo_recife.jpg" data-resource-id="logo_recife"/>
+<template id="__bundler_thumbnail">
+  <svg viewBox="0 0 120 80" xmlns="http://www.w3.org/2000/svg">
+    <rect width="120" height="80" fill="#eef4ff"/>
+    <rect x="16" y="16" width="88" height="48" rx="6" fill="#ffffff" stroke="rgba(0,96,224,0.2)" stroke-width="1"/>
+    <circle cx="60" cy="36" r="10" fill="#0060e0" opacity="0.15"/>
+    <circle cx="60" cy="36" r="6" fill="#00c9a7"/>
+    <circle cx="48" cy="30" r="4" fill="#0060e0" opacity="0.8"/>
+    <circle cx="72" cy="30" r="4" fill="#0060e0" opacity="0.8"/>
+    <rect x="30" y="52" width="60" height="4" rx="2" fill="#0060e0" opacity="0.15"/>
+    <rect x="40" y="58" width="40" height="3" rx="1.5" fill="#0060e0" opacity="0.1"/>
+  </svg>
+</template>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; overflow: hidden; }
+  body {
+    font-family: 'DM Sans', 'Space Grotesk', sans-serif;
+    background: #f4f8ff;
+    color: #0d1f3c;
+    -webkit-font-smoothing: antialiased;
+  }
+  #root { height: 100vh; display: flex; }
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.22); }
+  input, textarea, select {
+    color-scheme: light;
+  }
+  select option { background: #ffffff; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:none} }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<!-- data & components -->
+<script src="data.js"></script>
+<script type="text/babel" src="GovPanel.jsx"></script>
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+<script type="text/babel" src="Auth.jsx"></script>
+<script type="text/babel" src="Dashboard.jsx"></script>
+<script type="text/babel" src="Research.jsx"></script>
+<script type="text/babel" src="Chat.jsx"></script>
+
+<script type="text/babel">
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "primaryColor": "#0060e0",
+  "accentColor": "#059669",
+  "fontHeading": "Space Grotesk",
+  "density": "normal"
+}/*EDITMODE-END*/;
+
+function App() {
+  const [tweaks, setTweak] = useTweaks(TWEAK_DEFAULTS);
+
+  const [user, setUser] = React.useState(null);
+  const [nav, setNav] = React.useState('dashboard');
+  const [detail, setDetail] = React.useState(null);
+  const [chatConv, setChatConv] = React.useState(null);
+
+  // Apply tweaks to CSS vars
+  React.useEffect(() => {
+    document.documentElement.style.setProperty('--blue', tweaks.primaryColor);
+    document.documentElement.style.setProperty('--teal', tweaks.accentColor);
+  }, [tweaks.primaryColor, tweaks.accentColor]);
+
+  const handleLogin = (u) => { setUser(u); setNav(u.role==='gov'||u.role==='org' ? 'govdashboard' : 'dashboard'); };
+  const handleLogout = () => setUser(null);
+
+  const handleDetail = (project) => {
+    setDetail(project);
+    setNav('detail');
+  };
+
+  const handleContact = (project) => {
+    // Find or create conversation for this project
+    const existing = window.HubData.MESSAGES.find(m => m.projectId === project.id);
+    if (existing) {
+      setChatConv(existing);
+    } else {
+      // Create new conversation
+      const newConv = {
+        id: Date.now(),
+        projectId: project.id,
+        orgName: 'Sua Organização',
+        orgAvatar: 'VO',
+        messages: []
+      };
+      window.HubData.MESSAGES.push(newConv);
+      setChatConv(newConv);
+    }
+    setNav('chat');
+  };
+
+  if (!user) {
+    return (
+      <>
+        <AuthScreen onLogin={handleLogin}/>
+        <TweaksPanel>
+          <TweakSection title="Cores">
+            <TweakColor id="primaryColor" label="Cor principal" value={tweaks.primaryColor} onChange={v=>setTweak('primaryColor',v)}/>
+            <TweakColor id="accentColor" label="Cor de destaque" value={tweaks.accentColor} onChange={v=>setTweak('accentColor',v)}/>
+          </TweakSection>
+        </TweaksPanel>
+      </>
+    );
+  }
+
+  const renderContent = () => {
+    if (nav === 'govdashboard') return <GovDashboard onApprovals={() => setNav('approvals')} onDetail={handleDetail}/>;
+    if (nav === 'approvals')    return <Approvals/>;
+    if (nav === 'connections')  return <Connections/>;
+    if (nav === 'detail' && detail) {
+      return <ResearchDetail project={detail} onBack={() => setNav('dashboard')} onContact={handleContact}/>;
+    }
+    if (nav === 'new') return <NewResearch onDone={() => setNav('myresearch')}/>;
+    if (nav === 'chat') return <Chat initialConversation={chatConv}/>;
+    if (nav === 'myresearch') return <MyResearch onNew={() => setNav('new')} onDetail={handleDetail}/>;
+    return <Dashboard onDetail={handleDetail}/>;
+  };
+
+  return (
+    <div style={{display:'flex',width:'100%',height:'100vh',overflow:'hidden',animation:'fadeIn 0.3s ease'}}>
+      <Sidebar nav={nav==='detail'?'dashboard':nav} setNav={(n)=>{setNav(n);setDetail(null);setChatConv(null);}} user={user} onLogout={handleLogout}/>
+      <div style={{flex:1,minWidth:0,overflow:'hidden',display:'flex',flexDirection:'column'}}>
+        {renderContent()}
+      </div>
+      <TweaksPanel>
+        <TweakSection title="Cores">
+          <TweakColor id="primaryColor" label="Cor principal" value={tweaks.primaryColor} onChange={v=>setTweak('primaryColor',v)}/>
+          <TweakColor id="accentColor" label="Destaque / Teal" value={tweaks.accentColor} onChange={v=>setTweak('accentColor',v)}/>
+        </TweakSection>
+        <TweakSection title="Tipografia">
+          <TweakSelect id="fontHeading" label="Fonte dos títulos" value={tweaks.fontHeading}
+            options={['Space Grotesk','DM Sans','Inter','Georgia']}
+            onChange={v=>{ setTweak('fontHeading',v); document.querySelectorAll('h1,h2,h3,h4').forEach(el=>el.style.fontFamily=v); }}/>
+        </TweakSection>
+        <TweakSection title="Densidade">
+          <TweakSelect id="density" label="Espaçamento" value={tweaks.density}
+            options={['compact','normal','spacious']}
+            onChange={v=>setTweak('density',v)}/>
+        </TweakSection>
+      </TweaksPanel>
+    </div>
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App/>);
+</script>
+</body>
+</html>

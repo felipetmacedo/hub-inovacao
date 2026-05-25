@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Hub de Inovação e Pesquisa · Recife — PDF</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet"/>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'DM Sans', 'Space Grotesk', sans-serif;
+    background: #ffffff;
+    color: #0d1f3c;
+    -webkit-font-smoothing: antialiased;
+  }
+  select option { background: #ffffff; }
+
+  .page {
+    width: 297mm;
+    height: 210mm;
+    overflow: hidden;
+    display: flex;
+    background: #ffffff;
+    position: relative;
+  }
+
+  @media print {
+    @page { size: A4 landscape; margin: 0; }
+    html, body { width: 297mm; height: 210mm; }
+    .page {
+      break-before: page;
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+    .page:first-child { break-before: auto; }
+    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+
+  @media screen {
+    body { background: #cbd5e1; padding: 20px; display: flex; flex-direction: column; gap: 20px; align-items: center; }
+    .page { box-shadow: 0 4px 32px rgba(0,0,0,0.2); }
+  }
+
+  /* Sidebar shared styles */
+  .sidebar {
+    width: 180px;
+    flex-shrink: 0;
+    background: #ffffff;
+    border-right: 1px solid rgba(0,60,180,0.1);
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+  .sidebar-logo { display:flex; align-items:center; gap:8px; padding:16px 14px 12px; border-bottom:1px solid rgba(0,60,180,0.08); }
+  .sidebar-nav-item { display:flex; align-items:center; gap:8px; width:100%; padding:9px 14px; border:none; background:transparent; color:#6b7fa3; font-size:12px; font-weight:500; cursor:pointer; border-left:3px solid transparent; font-family:inherit; }
+  .sidebar-nav-active { background:rgba(0,96,224,0.07); color:#0060e0; border-left:3px solid #0060e0; font-weight:700; }
+  .sidebar-user { display:flex; align-items:center; gap:8px; padding:12px 14px; border-top:1px solid rgba(0,60,180,0.08); background:#f7faff; margin-top:auto; }
+  .avatar { border-radius:50%; background:rgba(0,96,224,0.12); border:2px solid rgba(0,96,224,0.25); display:flex; align-items:center; justify-content:center; font-weight:700; color:#0060e0; flex-shrink:0; }
+  .chip-blue { font-size:9px; font-weight:700; color:#0060e0; background:rgba(0,96,224,0.1); border-radius:3px; padding:2px 6px; text-transform:uppercase; letter-spacing:0.06em; }
+  .chip-gray { font-size:9px; font-weight:600; color:#6b7fa3; background:rgba(0,0,0,0.04); border-radius:3px; padding:2px 6px; }
+  .badge { background:#0060e0; color:#fff; font-size:9px; font-weight:700; border-radius:10px; padding:1px 5px; }
+  .content { flex:1; min-width:0; overflow:hidden; display:flex; flex-direction:column; background:#f4f8ff; }
+  .content-header { background:#ffffff; border-bottom:1px solid rgba(0,60,180,0.1); padding:18px 24px 14px; flex-shrink:0; }
+  .card { background:#ffffff; border:1px solid rgba(0,60,180,0.1); border-radius:10px; padding:16px; box-shadow:0 1px 4px rgba(0,60,180,0.05); }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="data.js"></script>
+<script type="text/babel">
+
+const D = window.HubData;
+
+function OdsBadge({ id, small }) {
+  const o = D.ODS_LIST.find(x => x.id === id);
+  if (!o) return null;
+  return (
+    <span style={{display:'inline-flex',alignItems:'center',gap:3,background:o.color+'18',border:`1px solid ${o.color}44`,borderRadius:small?3:5,padding:small?'1px 5px':'3px 7px',fontSize:small?9:10,fontWeight:600,color:o.color,whiteSpace:'nowrap'}}>
+      <span style={{width:small?9:11,height:small?9:11,borderRadius:2,background:o.color,display:'inline-block',flexShrink:0,fontSize:7,color:'#fff',textAlign:'center',lineHeight:small?'9px':'11px',fontWeight:800}}>{id}</span>
+      {!small && <span style={{maxWidth:100,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{o.label}</span>}
+    </span>
+  );
+}
+
+function StatusBadge({ status }) {
+  const map = { published:['Publicado','#059669'], review:['Em análise','#d97706'], draft:['Rascunho','#6b7fa3'] };
+  const [label, color] = map[status] || ['?','#888'];
+  return <span style={{fontSize:10,fontWeight:700,color,background:color+'18',border:`1px solid ${color}33`,borderRadius:3,padding:'2px 7px'}}>{label}</span>;
+}
+
+function Sidebar({ active }) {
+  const items = [
+    {id:'dashboard',icon:'◎',label:'Explorar'},
+    {id:'myresearch',icon:'⊞',label:'Minhas Pesquisas'},
+    {id:'chat',icon:'✉',label:'Mensagens',badge:1},
+    {id:'new',icon:'+',label:'Nova Pesquisa',accent:true},
+  ];
+  return (
+    <div className="sidebar">
+      <div className="sidebar-logo">
+        <img src="logo_recife.jpg" alt="Recife" style={{width:30,height:30,borderRadius:6,objectFit:'cover',flexShrink:0}}/>
+        <div>
+          <div style={{fontSize:11,fontWeight:800,color:'#0d1f3c',letterSpacing:'-0.2px'}}>Hub Inovação</div>
+          <div style={{fontSize:9,color:'#6b7fa3'}}>Recife · PE</div>
+        </div>
+      </div>
+      <nav style={{flex:1,padding:'6px 0'}}>
+        {items.map(item => (
+          <div key={item.id} className={`sidebar-nav-item${item.id===active?' sidebar-nav-active':''}`}
+            style={{color:item.accent?'#059669':undefined,fontWeight:item.accent?700:undefined}}>
+            <span style={{fontSize:13,width:18,textAlign:'center',flexShrink:0}}>{item.icon}</span>
+            <span style={{flex:1}}>{item.label}</span>
+            {item.badge && <span className="badge">{item.badge}</span>}
+          </div>
+        ))}
+      </nav>
+      <div className="sidebar-user">
+        <div className="avatar" style={{width:28,height:28,fontSize:10}}>AL</div>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{fontSize:11,fontWeight:600,color:'#0d1f3c',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>Dra. Ana Lima</div>
+          <div style={{fontSize:9,color:'#6b7fa3'}}>UFPE</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── PAGE 1: Login ── */
+function PageLogin() {
+  return (
+    <div className="page" style={{alignItems:'center',justifyContent:'center',background:'linear-gradient(160deg,#eef4ff 0%,#f7faff 60%,#e8f0fe 100%)'}}>
+      <svg style={{position:'absolute',inset:0,width:'100%',height:'100%',opacity:0.06}} viewBox="0 0 800 600" preserveAspectRatio="xMidYMid slice">
+        <defs><pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M 40 0 L 0 0 0 40" fill="none" stroke="#0060e0" strokeWidth="0.8"/></pattern></defs>
+        <rect width="800" height="600" fill="url(#grid)"/>
+      </svg>
+      <div style={{position:'absolute',top:'-20%',right:'-10%',width:500,height:500,borderRadius:'50%',background:'radial-gradient(circle,rgba(0,96,224,0.12) 0%,transparent 70%)'}}/>
+      <div style={{position:'relative',zIndex:1,background:'#ffffff',border:'1px solid rgba(0,60,180,0.1)',borderRadius:16,padding:'28px 32px',width:360,boxShadow:'0 8px 40px rgba(0,60,180,0.1)'}}>
+        <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:22}}>
+          <img src="logo_recife.jpg" alt="Recife" style={{width:42,height:42,borderRadius:8,objectFit:'cover'}}/>
+          <div>
+            <div style={{fontWeight:800,fontSize:14,color:'#0d1f3c'}}>Hub de Inovação</div>
+            <div style={{fontSize:10,color:'#6b7fa3',marginTop:1}}>Prefeitura do Recife · Pesquisa &amp; Desenvolvimento</div>
+          </div>
+        </div>
+        <div style={{display:'flex',background:'#f0f5ff',borderRadius:7,padding:3,marginBottom:20}}>
+          {['Entrar','Cadastrar-se'].map((t,i) => (
+            <div key={t} style={{flex:1,padding:'7px 0',borderRadius:5,background:i===0?'#ffffff':'transparent',color:i===0?'#0060e0':'#6b7fa3',fontSize:12,fontWeight:600,textAlign:'center',boxShadow:i===0?'0 1px 4px rgba(0,60,180,0.12)':'none'}}>{t}</div>
+          ))}
+        </div>
+        {[['E-mail','seu@email.com'],['Senha','••••••••']].map(([l,p]) => (
+          <div key={l} style={{marginBottom:14}}>
+            <div style={{fontSize:10,fontWeight:700,color:'#6b7fa3',textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:5}}>{l}</div>
+            <div style={{background:'#f7faff',border:'1px solid rgba(0,60,180,0.15)',borderRadius:7,padding:'10px 12px',color:l==='Senha'?'#0d1f3c':'#9badca',fontSize:13}}>{l==='Senha'?'••••••••':'Selecione o perfil para continuar'}</div>
+          </div>
+        ))}
+        <div style={{background:'linear-gradient(135deg,#3b8eff,#0040cc)',borderRadius:7,padding:'12px',color:'#fff',fontSize:13,fontWeight:700,textAlign:'center',marginTop:4}}>Entrar na plataforma</div>
+        <div style={{marginTop:16,display:'flex',gap:8,justifyContent:'center'}}>
+          {['Pesquisador','Organização'].map(r => (
+            <div key={r} style={{display:'flex',flexDirection:'column',alignItems:'center',gap:3,padding:'10px 16px',background:'#f7faff',border:'1px solid rgba(0,60,180,0.1)',borderRadius:7}}>
+              <span style={{fontSize:16}}>{r==='Pesquisador'?'🔬':'🏢'}</span>
+              <span style={{fontSize:11,fontWeight:700,color:'#0d1f3c'}}>{r}</span>
+              <span style={{fontSize:9,color:'#6b7fa3'}}>{r==='Pesquisador'?'Univ. / Instituto':'Empresa / Gov.'}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div style={{position:'absolute',bottom:20,fontSize:10,color:'rgba(107,127,163,0.6)',letterSpacing:'0.05em'}}>Prefeitura do Recife · UFPE · UNICAP · CESAR School</div>
+    </div>
+  );
+}
+
+/* ── PAGE 2: Dashboard ── */
+function PageDashboard() {
+  const projects = D.PROJECTS.slice(0,4);
+  return (
+    <div className="page">
+      <Sidebar active="dashboard"/>
+      <div className="content">
+        <div className="content-header">
+          <div style={{display:'flex',alignItems:'flex-end',justifyContent:'space-between',marginBottom:12}}>
+            <div>
+              <h1 style={{fontSize:18,fontWeight:800,color:'#0d1f3c',letterSpacing:'-0.3px'}}>Explorar Pesquisas</h1>
+              <p style={{fontSize:11,color:'#6b7fa3',marginTop:3}}>Conhecimento acadêmico de Recife, aberto para conexões</p>
+            </div>
+            <div style={{display:'flex',gap:18}}>
+              {[['6','Pesquisas'],['3','Instituições'],['27','Conexões']].map(([n,l]) => (
+                <div key={l} style={{textAlign:'center'}}>
+                  <div style={{fontSize:18,fontWeight:800,color:'#0060e0'}}>{n}</div>
+                  <div style={{fontSize:9,color:'#6b7fa3'}}>{l}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div style={{background:'#f7faff',border:'1px solid rgba(0,60,180,0.15)',borderRadius:8,padding:'9px 12px 9px 34px',color:'#9badca',fontSize:12,position:'relative',marginBottom:10}}>
+            <span style={{position:'absolute',left:12,top:'50%',transform:'translateY(-50%)',fontSize:12}}>🔍</span>
+            Buscar por tema, palavra-chave, pesquisador...
+          </div>
+          <div style={{display:'flex',gap:5,flexWrap:'wrap'}}>
+            {['Saúde','Tecnologia','Educação','Meio Ambiente','Urbanismo','UFPE','UNICAP','CESAR School'].map((a,i) => (
+              <div key={a} style={{padding:'3px 10px',borderRadius:14,border:`1px solid ${i===0?'#0060e0':'rgba(0,60,180,0.15)'}`,background:i===0?'rgba(0,96,224,0.1)':'#ffffff',color:i===0?'#0060e0':'#6b7fa3',fontSize:10,fontWeight:i===0?600:400}}>{a}</div>
+            ))}
+          </div>
+        </div>
+        <div style={{padding:'14px 18px',flex:1,overflow:'hidden'}}>
+          <div style={{fontSize:11,color:'#6b7fa3',marginBottom:10}}>6 pesquisas encontradas</div>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:10,height:'calc(100% - 26px)',overflow:'hidden'}}>
+            {projects.map(p => (
+              <div key={p.id} className="card" style={{display:'flex',flexDirection:'column',gap:8,overflow:'hidden'}}>
+                <div style={{display:'flex',gap:5,flexWrap:'wrap'}}>
+                  <span className="chip-blue">{p.area}</span>
+                  <span className="chip-gray">{p.type}</span>
+                  <span className="chip-gray">{p.institution}</span>
+                </div>
+                <h3 style={{fontSize:12,fontWeight:700,color:'#0d1f3c',lineHeight:1.4,display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical',overflow:'hidden'}}>{p.title}</h3>
+                <p style={{fontSize:10,color:'#6b7fa3',lineHeight:1.5,display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical',overflow:'hidden',margin:0}}>{p.simplified}</p>
+                <div style={{display:'flex',gap:3,flexWrap:'wrap'}}>
+                  {p.ods.map(id => <OdsBadge key={id} id={id} small/>)}
+                </div>
+                <div style={{display:'flex',alignItems:'center',gap:6,paddingTop:6,borderTop:'1px solid rgba(0,60,180,0.07)',marginTop:'auto'}}>
+                  <div className="avatar" style={{width:20,height:20,fontSize:8}}>{p.researcher.avatar}</div>
+                  <span style={{fontSize:10,color:'#6b7fa3',flex:1}}>{p.researcher.name}</span>
+                  <span style={{fontSize:9,color:'#059669',fontWeight:600}}>🔗 {p.connections}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── PAGE 3: Research Detail ── */
+function PageDetail() {
+  const p = D.PROJECTS[0];
+  return (
+    <div className="page">
+      <Sidebar active="dashboard"/>
+      <div className="content" style={{background:'#f4f8ff'}}>
+        <div style={{background:'#ffffff',borderBottom:'1px solid rgba(0,60,180,0.1)',padding:'10px 22px',display:'flex',alignItems:'center',gap:10}}>
+          <div style={{background:'none',border:'1px solid rgba(0,60,180,0.2)',borderRadius:5,padding:'4px 10px',color:'#6b7fa3',fontSize:11}}>← Voltar</div>
+          <span style={{fontSize:10,color:'#6b7fa3'}}>Explorar / {p.title.slice(0,45)}...</span>
+        </div>
+        <div style={{padding:'18px 22px',flex:1,overflow:'hidden',display:'flex',flexDirection:'column',gap:14}}>
+          <div>
+            <div style={{display:'flex',gap:5,marginBottom:8}}>
+              <span className="chip-blue">{p.area}</span>
+              <span className="chip-gray">{p.type}</span>
+              <span className="chip-gray">{p.institution} · {p.year}</span>
+            </div>
+            <h1 style={{fontSize:16,fontWeight:800,color:'#0d1f3c',lineHeight:1.3,letterSpacing:'-0.2px'}}>{p.title}</h1>
+          </div>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 200px',gap:16,flex:1,overflow:'hidden'}}>
+            <div style={{display:'flex',flexDirection:'column',gap:12,overflow:'hidden'}}>
+              <div style={{display:'flex',gap:0,borderBottom:'1px solid rgba(0,60,180,0.1)'}}>
+                {[['✨ Versão Simplificada',true],['📄 Resumo Técnico',false]].map(([t,a]) => (
+                  <div key={t} style={{padding:'7px 14px',fontSize:11,fontWeight:a?700:400,color:a?'#0060e0':'#6b7fa3',borderBottom:a?'2px solid #0060e0':'2px solid transparent',marginBottom:-1,cursor:'default'}}>{t}</div>
+                ))}
+              </div>
+              <div style={{background:'rgba(0,96,224,0.04)',border:'1px solid rgba(0,96,224,0.15)',borderRadius:8,padding:'14px',display:'flex',gap:8,alignItems:'flex-start'}}>
+                <span style={{fontSize:14}}>✨</span>
+                <div>
+                  <div style={{fontSize:9,fontWeight:700,color:'#0060e0',marginBottom:5,textTransform:'uppercase',letterSpacing:'0.06em'}}>Gerado por IA · Linguagem Acessível</div>
+                  <p style={{margin:0,fontSize:11,color:'#2d3f6b',lineHeight:1.6,display:'-webkit-box',WebkitLineClamp:4,WebkitBoxOrient:'vertical',overflow:'hidden'}}>{p.simplified}</p>
+                </div>
+              </div>
+              <div>
+                <div style={{fontSize:9,fontWeight:700,color:'#6b7fa3',textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:7}}>ODS Relacionados</div>
+                <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>{p.ods.map(id => <OdsBadge key={id} id={id}/>)}</div>
+              </div>
+              <div>
+                <div style={{fontSize:9,fontWeight:700,color:'#6b7fa3',textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:6}}>Palavras-chave</div>
+                <div style={{display:'flex',gap:5,flexWrap:'wrap'}}>
+                  {p.keywords.map(k=><span key={k} style={{fontSize:10,color:'#4a5a7a',background:'rgba(0,60,180,0.05)',border:'1px solid rgba(0,60,180,0.12)',borderRadius:3,padding:'3px 8px'}}>#{k}</span>)}
+                </div>
+              </div>
+            </div>
+            <div style={{display:'flex',flexDirection:'column',gap:10}}>
+              <div className="card">
+                <div style={{fontSize:9,fontWeight:700,color:'#6b7fa3',textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:10}}>Pesquisador(a)</div>
+                <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:12}}>
+                  <div className="avatar" style={{width:36,height:36,fontSize:12}}>{p.researcher.avatar}</div>
+                  <div>
+                    <div style={{fontSize:12,fontWeight:700,color:'#0d1f3c'}}>{p.researcher.name}</div>
+                    <div style={{fontSize:10,color:'#6b7fa3'}}>{p.researcher.institution}</div>
+                  </div>
+                </div>
+                <div style={{background:'linear-gradient(135deg,#3b8eff,#0040cc)',borderRadius:6,padding:'9px',color:'#fff',fontSize:11,fontWeight:700,textAlign:'center'}}>💬 Iniciar Contato</div>
+              </div>
+              <div className="card" style={{display:'flex',gap:12}}>
+                <div style={{flex:1,textAlign:'center'}}>
+                  <div style={{fontSize:18,fontWeight:800,color:'#0060e0'}}>{p.views}</div>
+                  <div style={{fontSize:9,color:'#6b7fa3'}}>Visualizações</div>
+                </div>
+                <div style={{width:1,background:'rgba(0,60,180,0.08)'}}/>
+                <div style={{flex:1,textAlign:'center'}}>
+                  <div style={{fontSize:18,fontWeight:800,color:'#059669'}}>{p.connections}</div>
+                  <div style={{fontSize:9,color:'#6b7fa3'}}>Conexões</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── PAGE 4: Nova Pesquisa ── */
+function PageNewResearch() {
+  const STEPS = ['Dados Básicos','Resumo Técnico','Simplificação IA','ODS & Revisão','Enviar'];
+  return (
+    <div className="page">
+      <Sidebar active="new"/>
+      <div className="content" style={{background:'#f4f8ff'}}>
+        <div className="content-header">
+          <h2 style={{fontSize:16,fontWeight:800,color:'#0d1f3c',marginBottom:12}}>Cadastrar Nova Pesquisa</h2>
+          <div style={{display:'flex',alignItems:'center',gap:0}}>
+            {STEPS.map((s,i) => (
+              <React.Fragment key={s}>
+                <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:3}}>
+                  <div style={{width:22,height:22,borderRadius:'50%',background:i===0?'#0060e0':'#eef4ff',border:`2px solid ${i===0?'#0060e0':'rgba(0,60,180,0.2)'}`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:9,fontWeight:700,color:i===0?'#fff':'#6b7fa3'}}>{i+1}</div>
+                  <span style={{fontSize:9,color:i===0?'#0060e0':'#6b7fa3',whiteSpace:'nowrap',fontWeight:i===0?700:400}}>{s}</span>
+                </div>
+                {i<STEPS.length-1 && <div style={{flex:1,height:2,background:'rgba(0,60,180,0.1)',margin:'0 3px',marginBottom:14}}/>}
+              </React.Fragment>
+            ))}
+          </div>
+        </div>
+        <div style={{padding:'16px 22px',flex:1,overflow:'hidden',display:'grid',gridTemplateColumns:'1fr 1fr',gap:14}}>
+          <div style={{background:'#ffffff',border:'1px solid rgba(0,60,180,0.1)',borderRadius:10,padding:'18px',boxShadow:'0 1px 4px rgba(0,60,180,0.05)',display:'flex',flexDirection:'column',gap:12}}>
+            <h3 style={{fontSize:13,fontWeight:800,color:'#0d1f3c'}}>Dados Básicos do Projeto</h3>
+            {[['Título da pesquisa','Ex: Detecção de dengue com machine learning...'],['Palavras-chave','saúde pública, machine learning, recife...']].map(([l,p]) => (
+              <div key={l}>
+                <div style={{fontSize:9,fontWeight:700,color:'#6b7fa3',textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:4}}>{l}</div>
+                <div style={{background:'#f7faff',border:'1px solid rgba(0,60,180,0.15)',borderRadius:6,padding:'8px 10px',color:'#9badca',fontSize:11}}>{p}</div>
+              </div>
+            ))}
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+              {[['Área','Saúde'],['Tipo','Aplicada'],['Instituição','UFPE'],['Ano','2025']].map(([l,v]) => (
+                <div key={l}>
+                  <div style={{fontSize:9,fontWeight:700,color:'#6b7fa3',textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:4}}>{l}</div>
+                  <div style={{background:'#f7faff',border:'1px solid rgba(0,60,180,0.15)',borderRadius:6,padding:'7px 10px',color:'#0d1f3c',fontSize:11}}>{v}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div style={{display:'flex',flexDirection:'column',gap:10}}>
+            <div style={{background:'rgba(0,96,224,0.05)',border:'1px solid rgba(0,96,224,0.15)',borderRadius:10,padding:'14px',flex:1}}>
+              <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:10}}>
+                <span style={{fontSize:14}}>✨</span>
+                <span style={{fontSize:10,fontWeight:700,color:'#0060e0',textTransform:'uppercase',letterSpacing:'0.06em'}}>Simplificação por IA</span>
+              </div>
+              <p style={{fontSize:11,color:'#2d3f6b',lineHeight:1.6,margin:0}}>Esta pesquisa busca detectar surtos de dengue em Recife com até 4 semanas de antecedência. O sistema analisa dados climáticos e históricos de casos da cidade para fazer previsões precisas, permitindo que agentes de saúde atuem de forma preventiva.</p>
+            </div>
+            <div style={{background:'#ffffff',border:'1px solid rgba(0,60,180,0.1)',borderRadius:10,padding:'14px',boxShadow:'0 1px 4px rgba(0,60,180,0.05)'}}>
+              <div style={{fontSize:10,fontWeight:700,color:'#6b7fa3',textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:8}}>ODS Sugeridos pela IA</div>
+              <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+                {[3,11,13].map(id => <OdsBadge key={id} id={id}/>)}
+              </div>
+            </div>
+            <div style={{display:'flex',justifyContent:'flex-end',gap:8}}>
+              <div style={{padding:'8px 16px',borderRadius:6,border:'1px solid rgba(0,60,180,0.18)',background:'#ffffff',color:'#6b7fa3',fontSize:11}}>← Anterior</div>
+              <div style={{padding:'8px 16px',borderRadius:6,background:'linear-gradient(135deg,#3b8eff,#0040cc)',color:'#fff',fontSize:11,fontWeight:700}}>Próximo →</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── PAGE 5: Chat ── */
+function PageChat() {
+  const conv = D.MESSAGES[0];
+  const proj = D.PROJECTS.find(p=>p.id===conv.projectId);
+  return (
+    <div className="page">
+      <Sidebar active="chat"/>
+      <div className="content" style={{background:'#f4f8ff'}}>
+        <div className="content-header">
+          <h2 style={{fontSize:16,fontWeight:800,color:'#0d1f3c'}}>Mensagens</h2>
+          <p style={{fontSize:11,color:'#6b7fa3',marginTop:2}}>2 conversas ativas</p>
+        </div>
+        <div style={{flex:1,display:'flex',overflow:'hidden'}}>
+          <div style={{width:210,flexShrink:0,borderRight:'1px solid rgba(0,60,180,0.1)',background:'#ffffff',overflow:'hidden'}}>
+            {D.MESSAGES.map((c,i) => {
+              const p2 = D.PROJECTS.find(p=>p.id===c.projectId);
+              const last = c.messages[c.messages.length-1];
+              return (
+                <div key={c.id} style={{padding:'11px 13px',borderBottom:'1px solid rgba(0,60,180,0.07)',background:i===0?'rgba(0,96,224,0.07)':'#ffffff',borderLeft:i===0?'3px solid #0060e0':'3px solid transparent'}}>
+                  <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:3}}>
+                    <div className="avatar" style={{width:26,height:26,fontSize:9}}>{c.orgAvatar}</div>
+                    <span style={{fontSize:11,fontWeight:600,color:'#0d1f3c',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{c.orgName}</span>
+                  </div>
+                  <div style={{fontSize:9,color:'#6b7fa3',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',paddingLeft:34}}>{last?.text}</div>
+                  {p2 && <div style={{fontSize:9,color:'#0060e0',marginTop:2,paddingLeft:34,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>📎 {p2.title}</div>}
+                </div>
+              );
+            })}
+          </div>
+          <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
+            <div style={{padding:'10px 18px',borderBottom:'1px solid rgba(0,60,180,0.1)',background:'#ffffff',display:'flex',alignItems:'center',gap:10}}>
+              <div className="avatar" style={{width:30,height:30,fontSize:10}}>{conv.orgAvatar}</div>
+              <div>
+                <div style={{fontSize:12,fontWeight:700,color:'#0d1f3c'}}>{conv.orgName}</div>
+                {proj && <div style={{fontSize:9,color:'#6b7fa3'}}>📎 {proj.title.slice(0,50)}...</div>}
+              </div>
+              <div style={{marginLeft:'auto',background:'rgba(5,150,105,0.09)',border:'1px solid rgba(5,150,105,0.25)',borderRadius:5,padding:'3px 10px',fontSize:9,color:'#059669',fontWeight:600}}>Projeto vinculado</div>
+            </div>
+            <div style={{flex:1,padding:'14px 18px',display:'flex',flexDirection:'column',gap:10,overflow:'hidden'}}>
+              {conv.messages.map((msg,i) => {
+                const isMe = msg.from === 'researcher';
+                return (
+                  <div key={i} style={{display:'flex',justifyContent:isMe?'flex-end':'flex-start',gap:6,alignItems:'flex-end'}}>
+                    {!isMe && <div className="avatar" style={{width:22,height:22,fontSize:8}}>{conv.orgAvatar}</div>}
+                    <div style={{maxWidth:'65%'}}>
+                      <div style={{background:isMe?'linear-gradient(135deg,#3b8eff,#0040cc)':'#ffffff',border:isMe?'none':'1px solid rgba(0,60,180,0.1)',borderRadius:isMe?'10px 10px 3px 10px':'10px 10px 10px 3px',padding:'8px 11px',boxShadow:isMe?'0 2px 6px rgba(0,64,204,0.2)':'0 1px 3px rgba(0,60,180,0.06)'}}>
+                        <p style={{margin:0,fontSize:11,color:isMe?'#ffffff':'#0d1f3c',lineHeight:1.5}}>{msg.text}</p>
+                      </div>
+                      <div style={{fontSize:9,color:'#6b7fa3',marginTop:2,textAlign:isMe?'right':'left'}}>{msg.time}</div>
+                    </div>
+                    {isMe && <div className="avatar" style={{width:22,height:22,fontSize:8,background:'rgba(5,150,105,0.12)',border:'1px solid rgba(5,150,105,0.25)',color:'#059669'}}>AL</div>}
+                  </div>
+                );
+              })}
+            </div>
+            <div style={{padding:'10px 18px',borderTop:'1px solid rgba(0,60,180,0.1)',background:'#ffffff',display:'flex',gap:8}}>
+              <div style={{flex:1,background:'#f7faff',border:'1px solid rgba(0,60,180,0.15)',borderRadius:8,padding:'9px 12px',color:'#9badca',fontSize:11}}>Escreva sua mensagem...</div>
+              <div style={{background:'linear-gradient(135deg,#3b8eff,#0040cc)',borderRadius:8,padding:'9px 14px',color:'#fff',fontSize:13}}>➤</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── PAGE 6: Minhas Pesquisas ── */
+function PageMyResearch() {
+  return (
+    <div className="page">
+      <Sidebar active="myresearch"/>
+      <div className="content" style={{background:'#f4f8ff'}}>
+        <div className="content-header" style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'18px 22px 14px'}}>
+          <div>
+            <h2 style={{fontSize:16,fontWeight:800,color:'#0d1f3c'}}>Minhas Pesquisas</h2>
+            <p style={{fontSize:11,color:'#6b7fa3',marginTop:2}}>3 projetos ativos</p>
+          </div>
+          <div style={{background:'linear-gradient(135deg,#3b8eff,#0040cc)',borderRadius:7,padding:'8px 16px',color:'#fff',fontSize:11,fontWeight:700}}>+ Nova Pesquisa</div>
+        </div>
+        <div style={{padding:'14px 22px',display:'flex',flexDirection:'column',gap:9,flex:1,overflow:'hidden'}}>
+          {D.MY_PROJECTS.map(p => (
+            <div key={p.id} className="card" style={{display:'flex',alignItems:'center',gap:14}}>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{display:'flex',alignItems:'center',gap:7,marginBottom:5}}>
+                  <StatusBadge status={p.status}/>
+                  <span style={{fontSize:10,color:'#6b7fa3'}}>{p.area} · {p.type} · {p.year}</span>
+                </div>
+                <h3 style={{fontSize:12,fontWeight:700,color:'#0d1f3c',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{p.title}</h3>
+                {p.status==='published' && (
+                  <div style={{display:'flex',gap:12,marginTop:4}}>
+                    <span style={{fontSize:10,color:'#6b7fa3'}}>👁 {p.views} views</span>
+                    <span style={{fontSize:10,color:'#059669',fontWeight:600}}>🔗 {p.connections} conexões</span>
+                  </div>
+                )}
+              </div>
+              <div style={{display:'flex',gap:6,flexShrink:0}}>
+                {p.status==='published' && <div style={{padding:'5px 11px',borderRadius:5,border:'1px solid rgba(0,96,224,0.25)',background:'rgba(0,96,224,0.06)',color:'#0060e0',fontSize:10,fontWeight:600}}>Ver</div>}
+                <div style={{padding:'5px 11px',borderRadius:5,border:'1px solid rgba(0,60,180,0.15)',color:'#6b7fa3',fontSize:10}}>Editar</div>
+                <div style={{padding:'5px 11px',borderRadius:5,border:'1px solid rgba(220,38,38,0.2)',background:'rgba(220,38,38,0.04)',color:'#dc2626',fontSize:10}}>Ocultar</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Print App ── */
+function PrintApp() {
+  return (
+    <div>
+      <PageLogin/>
+      <PageDashboard/>
+      <PageDetail/>
+      <PageNewResearch/>
+      <PageChat/>
+      <PageMyResearch/>
+    </div>
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<PrintApp/>);
+</script>
+
+<script type="text/babel">
+  // Auto-print after fonts + React render
+  document.fonts.ready.then(() => {
+    setTimeout(() => { window.print(); }, 600);
+  });
+</script>
+</body>
+</html>
