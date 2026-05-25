@@ -1,22 +1,15 @@
 import { useState } from 'react';
-import { PROJECTS, AREAS, INSTITUTIONS } from '../../data';
+import { AREAS, INSTITUTIONS } from '../../data';
 import { useMobile } from '../../hooks/useMobile';
+import { useProjects } from '../../hooks/useProjects';
 import { ResearchCard } from './ResearchCard';
 
 export function Dashboard({ onDetail }) {
   const mobile = useMobile();
-  const [search, setSearch] = useState('');
+  const [search, setSearch]   = useState('');
   const [filters, setFilters] = useState({ area: '', institution: '', type: '', ods: '' });
 
-  const filtered = PROJECTS.filter(p => {
-    const q = search.toLowerCase();
-    const matchSearch = !q || p.title.toLowerCase().includes(q) || p.keywords.some(k => k.includes(q)) || p.simplified.toLowerCase().includes(q);
-    const matchArea = !filters.area || p.area === filters.area;
-    const matchInst = !filters.institution || p.institution === filters.institution;
-    const matchType = !filters.type || p.type === filters.type;
-    const matchOds = !filters.ods || p.ods.includes(parseInt(filters.ods));
-    return matchSearch && matchArea && matchInst && matchType && matchOds;
-  });
+  const { projects, loading } = useProjects({ search, ...filters });
 
   const setFilter = (k, v) => setFilters(f => ({ ...f, [k]: f[k] === v ? '' : v }));
 
@@ -29,7 +22,7 @@ export function Dashboard({ onDetail }) {
             <p style={{ margin: '4px 0 0', fontSize: mobile ? 12 : 14, color: '#6b7fa3' }}>Conhecimento acadêmico de Recife, aberto para conexões</p>
           </div>
           <div style={{ display: 'flex', gap: mobile ? 16 : 24 }}>
-            {[['6', 'Pesquisas'], ['3', 'Instituições'], ['27', 'Conexões']].map(([n, l]) => (
+            {[[String(projects.length), 'Pesquisas'], ['3', 'Instituições'], ['27', 'Conexões']].map(([n, l]) => (
               <div key={l} style={{ textAlign: 'center' }}>
                 <div style={{ fontSize: mobile ? 16 : 22, fontWeight: 800, color: '#0060e0' }}>{n}</div>
                 <div style={{ fontSize: 10, color: '#6b7fa3' }}>{l}</div>
@@ -37,12 +30,14 @@ export function Dashboard({ onDetail }) {
             ))}
           </div>
         </div>
+
         <div style={{ position: 'relative', marginBottom: 10 }}>
           <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 14, color: '#6b7fa3' }}>🔍</span>
           <input value={search} onChange={e => setSearch(e.target.value)}
             placeholder="Buscar tema, palavra-chave..."
             style={{ width: '100%', boxSizing: 'border-box', background: '#f7faff', border: '1px solid rgba(0,60,180,0.15)', borderRadius: 10, padding: '10px 14px 10px 36px', color: '#0d1f3c', fontSize: 13, outline: 'none', fontFamily: 'inherit' }} />
         </div>
+
         <div style={{ display: 'flex', gap: 6, flexWrap: 'nowrap', overflowX: 'auto', paddingBottom: 2 }}>
           {AREAS.slice(0, mobile ? 5 : 6).map(a => (
             <button key={a} onClick={() => setFilter('area', a)}
@@ -66,16 +61,27 @@ export function Dashboard({ onDetail }) {
       </div>
 
       <div style={{ padding: mobile ? '14px 16px' : '24px 32px' }}>
-        <div style={{ fontSize: 12, color: '#6b7fa3', marginBottom: 12 }}>{filtered.length} pesquisa{filtered.length !== 1 ? 's' : ''} encontrada{filtered.length !== 1 ? 's' : ''}</div>
-        <div style={{ display: 'grid', gridTemplateColumns: mobile ? '1fr' : 'repeat(auto-fill,minmax(340px,1fr))', gap: 12 }}>
-          {filtered.map(p => <ResearchCard key={p.id} project={p} onClick={onDetail} />)}
-        </div>
-        {filtered.length === 0 && (
+        {loading ? (
           <div style={{ textAlign: 'center', padding: '48px 0', color: '#6b7fa3' }}>
-            <div style={{ fontSize: 36, marginBottom: 10 }}>🔬</div>
-            <div style={{ fontSize: 15, fontWeight: 600, color: '#0d1f3c' }}>Nenhuma pesquisa encontrada</div>
-            <div style={{ fontSize: 12, marginTop: 5 }}>Tente outros termos ou remova filtros</div>
+            <div style={{ fontSize: 24, marginBottom: 8, animation: 'pulse 1.5s infinite' }}>⏳</div>
+            <div style={{ fontSize: 13 }}>Carregando pesquisas...</div>
           </div>
+        ) : (
+          <>
+            <div style={{ fontSize: 12, color: '#6b7fa3', marginBottom: 12 }}>
+              {projects.length} pesquisa{projects.length !== 1 ? 's' : ''} encontrada{projects.length !== 1 ? 's' : ''}
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: mobile ? '1fr' : 'repeat(auto-fill,minmax(340px,1fr))', gap: 12 }}>
+              {projects.map(p => <ResearchCard key={p.id} project={p} onClick={onDetail} />)}
+            </div>
+            {projects.length === 0 && (
+              <div style={{ textAlign: 'center', padding: '48px 0', color: '#6b7fa3' }}>
+                <div style={{ fontSize: 36, marginBottom: 10 }}>🔬</div>
+                <div style={{ fontSize: 15, fontWeight: 600, color: '#0d1f3c' }}>Nenhuma pesquisa encontrada</div>
+                <div style={{ fontSize: 12, marginTop: 5 }}>Tente outros termos ou remova filtros</div>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

@@ -1,37 +1,58 @@
 import { useState } from 'react';
+import { useAuth } from '../../contexts/AuthContext';
 
-export function AuthScreen({ onLogin }) {
-  const [mode, setMode] = useState('login');
-  const [role, setRole] = useState('researcher');
-  const [step, setStep] = useState(1);
-  const [form, setForm] = useState({ email: '', password: '', name: '', institution: '' });
+export function AuthScreen() {
+  const { signIn, signUp } = useAuth();
+  const [mode, setMode]     = useState('login');
+  const [role, setRole]     = useState('researcher');
+  const [step, setStep]     = useState(1);
+  const [form, setForm]     = useState({ email: '', password: '', confirmPassword: '', name: '', institution: '' });
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError]   = useState('');
 
-  const handleLogin = (e) => {
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+  const handleLogin = async (e) => {
     e.preventDefault();
     if (!form.email || !form.password) { setError('Preencha todos os campos.'); return; }
     setLoading(true);
-    setTimeout(() => {
+    setError('');
+    try {
+      await signIn({ email: form.email, password: form.password });
+    } catch (err) {
+      setError(err.message === 'Invalid login credentials'
+        ? 'E-mail ou senha incorretos.'
+        : err.message);
+    } finally {
       setLoading(false);
-      const names = { researcher: 'Dra. Ana Lima', gov: 'João Cardoso', org: 'Secretaria de Saúde' };
-      const institutions = { researcher: 'UFPE', gov: 'Prefeitura do Recife', org: 'Secretaria Municipal' };
-      const avatars = { researcher: 'AL', gov: 'JC', org: 'SS' };
-      onLogin({ name: names[role], role, institution: institutions[role], avatar: avatars[role] });
-    }, 1000);
+    }
   };
 
-  const handleRegister = (e) => {
+  const handleRegister = async (e) => {
     e.preventDefault();
-    if (step === 1) { setStep(2); return; }
-    setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      onLogin({ name: form.name || 'Usuário', role, institution: form.institution || 'UFPE', avatar: (form.name || 'U').slice(0, 2).toUpperCase() });
-    }, 1000);
-  };
+    if (step === 1) {
+      if (!form.name || !form.email) { setError('Preencha nome e e-mail.'); return; }
+      setError('');
+      setStep(2);
+      return;
+    }
+    if (!form.institution) { setError('Informe a instituição.'); return; }
+    if (!form.password || form.password.length < 6) { setError('Senha deve ter mínimo 6 caracteres.'); return; }
+    if (form.password !== form.confirmPassword) { setError('As senhas não coincidem.'); return; }
 
-  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+    setLoading(true);
+    setError('');
+    try {
+      await signUp({ email: form.email, password: form.password, name: form.name, institution: form.institution, role });
+    } catch (err) {
+      setError(err.message === 'User already registered'
+        ? 'E-mail já cadastrado. Faça login.'
+        : err.message);
+      setStep(2);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const s = styles;
 
@@ -90,7 +111,6 @@ export function AuthScreen({ onLogin }) {
             <button type="submit" style={{ ...s.btn, opacity: loading ? 0.7 : 1 }} disabled={loading}>
               {loading ? 'Entrando...' : 'Entrar na plataforma'}
             </button>
-            <div style={s.hint}>Demo: qualquer e-mail + senha</div>
           </form>
         ) : (
           <form onSubmit={handleRegister} style={s.form}>
@@ -121,18 +141,18 @@ export function AuthScreen({ onLogin }) {
               </div>
               <div style={s.field}>
                 <label style={s.label}>Senha</label>
-                <input style={s.input} type="password" placeholder="Mínimo 8 caracteres" />
+                <input style={s.input} type="password" placeholder="Mínimo 6 caracteres" value={form.password} onChange={e => set('password', e.target.value)} />
               </div>
               <div style={s.field}>
                 <label style={s.label}>Confirmar senha</label>
-                <input style={s.input} type="password" placeholder="Repita a senha" />
+                <input style={s.input} type="password" placeholder="Repita a senha" value={form.confirmPassword} onChange={e => set('confirmPassword', e.target.value)} />
               </div>
             </>}
             {error && <div style={s.error}>{error}</div>}
             <button type="submit" style={{ ...s.btn, opacity: loading ? 0.7 : 1 }} disabled={loading}>
               {loading ? 'Criando conta...' : step === 1 ? 'Continuar →' : 'Criar conta'}
             </button>
-            {step === 2 && <button type="button" onClick={() => setStep(1)} style={s.back}>← Voltar</button>}
+            {step === 2 && <button type="button" onClick={() => { setStep(1); setError(''); }} style={s.back}>← Voltar</button>}
           </form>
         )}
       </div>
@@ -159,6 +179,5 @@ const styles = {
   roleBtn: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, padding: '12px 8px', background: '#f7faff', border: '1px solid rgba(0,60,180,0.1)', borderRadius: 8, cursor: 'pointer', transition: 'all 0.2s', fontFamily: 'inherit' },
   roleBtnActive: { background: '#eef4ff', border: '1px solid rgba(0,96,224,0.4)', boxShadow: '0 0 0 3px rgba(0,96,224,0.08)' },
   error: { fontSize: 13, color: '#dc2626', background: 'rgba(220,38,38,0.07)', borderRadius: 6, padding: '8px 12px' },
-  hint: { fontSize: 11, color: '#6b7fa3', textAlign: 'center' },
   footer: { position: 'relative', zIndex: 1, marginTop: 24, fontSize: 11, color: 'rgba(107,127,163,0.7)', textAlign: 'center', letterSpacing: '0.05em' },
 };

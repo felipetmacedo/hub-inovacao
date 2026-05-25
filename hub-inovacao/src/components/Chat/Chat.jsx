@@ -1,37 +1,68 @@
 import { useState, useRef, useEffect } from 'react';
-import { MESSAGES, PROJECTS } from '../../data';
 import { useMobile } from '../../hooks/useMobile';
+import { useConversations } from '../../hooks/useConversations';
+import { useMessages } from '../../hooks/useMessages';
+import { useAuth } from '../../contexts/AuthContext';
 
-export function Chat({ initialConversation }) {
+export function Chat({ initialConvId }) {
   const mobile = useMobile();
-  const [conversations, setConversations] = useState(MESSAGES);
-  const [active, setActive] = useState(initialConversation || MESSAGES[0]);
-  const [input, setInput] = useState('');
-  const [notif, setNotif] = useState(null);
-  const messagesEndRef = useRef(null);
+  const { profile } = useAuth();
+  const { conversations, loading: convsLoading } = useConversations();
 
-  const activeConv = conversations.find(c => c.id === active?.id);
-  const project = activeConv ? PROJECTS.find(p => p.id === activeConv.projectId) : null;
+  const [activeId, setActiveId] = useState(initialConvId || null);
+  const [input, setInput]       = useState('');
+  const [notif, setNotif]       = useState(null);
+  const messagesEndRef           = useRef(null);
 
-  const send = () => {
-    if (!input.trim()) return;
-    const newMsg = { from: 'researcher', text: input, time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) };
-    setConversations(cs => cs.map(c => c.id === active.id ? { ...c, messages: [...c.messages, newMsg] } : c));
-    setInput('');
-    setTimeout(() => {
-      const replies = ['Perfeito! Vamos agendar para essa semana.', 'Ótimo, aguardamos mais detalhes.', 'Podemos marcar uma reunião para discutir a proposta?', 'Excelente iniciativa! Contamos com a parceria.'];
-      const reply = { from: 'org', text: replies[Math.floor(Math.random() * replies.length)], time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) };
-      setConversations(cs => cs.map(c => c.id === active.id ? { ...c, messages: [...c.messages, reply] } : c));
-      setNotif('Nova mensagem recebida!');
-      setTimeout(() => setNotif(null), 3000);
-    }, 1500);
-  };
+  // Define a conversa ativa assim que as conversas carregarem
+  useEffect(() => {
+    if (!activeId && conversations.length > 0) {
+      setActiveId(conversations[0].id);
+    }
+  }, [conversations, activeId]);
 
   useEffect(() => {
+    if (initialConvId) setActiveId(initialConvId);
+  }, [initialConvId]);
+
+  const activeConv = conversations.find(c => c.id === activeId);
+
+  const { messages, sendMessage } = useMessages(activeId);
+
+  // Scroll automático
+  useEffect(() => {
     if (messagesEndRef.current) {
-      messagesEndRef.current.parentElement.scrollTop = messagesEndRef.current.offsetTop;
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [activeConv?.messages?.length]);
+  }, [messages.length]);
+
+  const send = async () => {
+    if (!input.trim()) return;
+    const text = input;
+    setInput('');
+    try {
+      await sendMessage(text);
+    } catch (err) {
+      console.error('Erro ao enviar mensagem:', err);
+    }
+  };
+
+  // Toast de nova mensagem de outro usuário
+  useEffect(() => {
+    if (messages.length === 0) return;
+    const last = messages[messages.length - 1];
+    if (last.sender_id !== profile?.id) {
+      setNotif('Nova mensagem recebida!');
+      const t = setTimeout(() => setNotif(null), 3000);
+      return () => clearTimeout(t);
+    }
+  }, [messages.length]);
+
+  const getOtherParty = (conv) => {
+    if (!conv || !profile) return { name: '...', avatar: '?' };
+    if (profile.id === conv.org_user_id) return conv.researcher;
+    return conv.org_user;
+  };
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: '#f4f8ff', overflow: 'hidden', position: 'relative', width: '100%' }}>
@@ -43,26 +74,27 @@ export function Chat({ initialConversation }) {
 
       <div style={{ background: '#ffffff', borderBottom: '1px solid rgba(0,60,180,0.1)', padding: '18px 24px' }}>
         <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: '#0d1f3c' }}>Mensagens</h2>
-        <p style={{ margin: '3px 0 0', fontSize: 12, color: '#6b7fa3' }}>{conversations.length} conversa{conversations.length !== 1 ? 's' : ''} ativa{conversations.length !== 1 ? 's' : ''}</p>
+        <p style={{ margin: '3px 0 0', fontSize: 12, color: '#6b7fa3' }}>
+          {convsLoading ? 'Carregando...' : `${conversations.length} conversa${conversations.length !== 1 ? 's' : ''}`}
+        </p>
       </div>
 
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden', flexDirection: mobile ? 'column' : 'row' }}>
+        {/* Lista de conversas */}
         <div style={{ width: mobile ? '100%' : 270, maxHeight: mobile ? 220 : undefined, flexShrink: 0, borderRight: mobile ? 'none' : '1px solid rgba(0,60,180,0.1)', borderBottom: mobile ? '1px solid rgba(0,60,180,0.1)' : 'none', background: '#ffffff', overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
           {conversations.map(conv => {
-            const proj = PROJECTS.find(p => p.id === conv.projectId);
-            const last = conv.messages[conv.messages.length - 1];
-            const isActive = active?.id === conv.id;
+            const other = getOtherParty(conv);
+            const isActive = activeId === conv.id;
             return (
-              <div key={conv.id} onClick={() => setActive(conv)}
+              <div key={conv.id} onClick={() => setActiveId(conv.id)}
                 style={{ padding: '14px 16px', borderBottom: '1px solid rgba(0,60,180,0.07)', cursor: 'pointer', background: isActive ? 'rgba(0,96,224,0.07)' : '#ffffff', borderLeft: isActive ? '3px solid #0060e0' : '3px solid transparent', transition: 'all 0.15s' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-                  <div style={{ width: 34, height: 34, borderRadius: '50%', background: 'rgba(0,96,224,0.1)', border: '2px solid rgba(0,96,224,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: '#0060e0', flexShrink: 0 }}>{conv.orgAvatar}</div>
+                  <div style={{ width: 34, height: 34, borderRadius: '50%', background: 'rgba(0,96,224,0.1)', border: '2px solid rgba(0,96,224,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: '#0060e0', flexShrink: 0 }}>{other?.avatar || '?'}</div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: '#0d1f3c', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{conv.orgName}</div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: '#0d1f3c', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{other?.name || '...'}</div>
                   </div>
                 </div>
-                <div style={{ fontSize: 11, color: '#6b7fa3', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingLeft: 44 }}>{last?.text}</div>
-                {proj && <div style={{ fontSize: 10, color: '#0060e0', marginTop: 3, paddingLeft: 44, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>📎 {proj.title}</div>}
+                {conv.project && <div style={{ fontSize: 10, color: '#0060e0', marginTop: 3, paddingLeft: 44, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>📎 {conv.project.title}</div>}
               </div>
             );
           })}
@@ -71,37 +103,48 @@ export function Chat({ initialConversation }) {
           </div>
         </div>
 
+        {/* Thread */}
         {activeConv ? (
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
             <div style={{ padding: '14px 24px', borderBottom: '1px solid rgba(0,60,180,0.1)', background: '#ffffff', display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{ width: 38, height: 38, borderRadius: '50%', background: 'rgba(0,96,224,0.1)', border: '2px solid rgba(0,96,224,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: '#0060e0' }}>{activeConv.orgAvatar}</div>
-              <div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: '#0d1f3c' }}>{activeConv.orgName}</div>
-                {project && <div style={{ fontSize: 11, color: '#6b7fa3', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 400 }}>📎 {project.title}</div>}
-              </div>
-              {project && (
-                <div style={{ marginLeft: 'auto', background: 'rgba(5,150,105,0.09)', border: '1px solid rgba(5,150,105,0.25)', borderRadius: 6, padding: '4px 12px', fontSize: 11, color: '#059669', fontWeight: 600 }}>
-                  Projeto vinculado
-                </div>
-              )}
+              {(() => {
+                const other = getOtherParty(activeConv);
+                return (
+                  <>
+                    <div style={{ width: 38, height: 38, borderRadius: '50%', background: 'rgba(0,96,224,0.1)', border: '2px solid rgba(0,96,224,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: '#0060e0' }}>{other?.avatar || '?'}</div>
+                    <div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: '#0d1f3c' }}>{other?.name || '...'}</div>
+                      {activeConv.project && <div style={{ fontSize: 11, color: '#6b7fa3', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 400 }}>📎 {activeConv.project.title}</div>}
+                    </div>
+                    {activeConv.project && (
+                      <div style={{ marginLeft: 'auto', background: 'rgba(5,150,105,0.09)', border: '1px solid rgba(5,150,105,0.25)', borderRadius: 6, padding: '4px 12px', fontSize: 11, color: '#059669', fontWeight: 600 }}>
+                        Projeto vinculado
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
             </div>
 
             <div style={{ flex: 1, overflow: 'auto', padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 14, background: '#f4f8ff' }}>
-              {activeConv.messages.map((msg, i) => {
-                const isMe = msg.from === 'researcher';
+              {messages.map((msg, i) => {
+                const isMe = msg.sender_id === profile?.id;
+                const avatar = msg.sender?.avatar || (isMe ? profile?.avatar : '?');
                 return (
-                  <div key={i} style={{ display: 'flex', justifyContent: isMe ? 'flex-end' : 'flex-start', gap: 8, alignItems: 'flex-end' }}>
+                  <div key={msg.id || i} style={{ display: 'flex', justifyContent: isMe ? 'flex-end' : 'flex-start', gap: 8, alignItems: 'flex-end' }}>
                     {!isMe && (
-                      <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(0,96,224,0.1)', border: '1px solid rgba(0,96,224,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700, color: '#0060e0', flexShrink: 0 }}>{activeConv.orgAvatar}</div>
+                      <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(0,96,224,0.1)', border: '1px solid rgba(0,96,224,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700, color: '#0060e0', flexShrink: 0 }}>{avatar}</div>
                     )}
                     <div style={{ maxWidth: '68%' }}>
                       <div style={{ background: isMe ? 'linear-gradient(135deg,#3b8eff,#0040cc)' : '#ffffff', border: isMe ? 'none' : '1px solid rgba(0,60,180,0.1)', borderRadius: isMe ? '12px 12px 4px 12px' : '12px 12px 12px 4px', padding: '10px 14px', boxShadow: isMe ? '0 2px 8px rgba(0,64,204,0.25)' : '0 1px 4px rgba(0,60,180,0.07)' }}>
                         <p style={{ margin: 0, fontSize: 13, color: isMe ? '#ffffff' : '#0d1f3c', lineHeight: 1.6 }}>{msg.text}</p>
                       </div>
-                      <div style={{ fontSize: 10, color: '#6b7fa3', marginTop: 3, textAlign: isMe ? 'right' : 'left' }}>{msg.time}</div>
+                      <div style={{ fontSize: 10, color: '#6b7fa3', marginTop: 3, textAlign: isMe ? 'right' : 'left' }}>
+                        {new Date(msg.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                      </div>
                     </div>
                     {isMe && (
-                      <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(5,150,105,0.12)', border: '1px solid rgba(5,150,105,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700, color: '#059669', flexShrink: 0 }}>AL</div>
+                      <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(5,150,105,0.12)', border: '1px solid rgba(5,150,105,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700, color: '#059669', flexShrink: 0 }}>{profile?.avatar}</div>
                     )}
                   </div>
                 );

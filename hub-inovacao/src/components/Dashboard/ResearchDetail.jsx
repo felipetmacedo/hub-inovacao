@@ -1,11 +1,14 @@
 import { useState } from 'react';
 import { useMobile } from '../../hooks/useMobile';
+import { useConversations } from '../../hooks/useConversations';
 import { OdsBadge } from '../shared/OdsBadge';
 import { Avatar } from '../shared/Avatar';
 
 export function ResearchDetail({ project, onBack, onContact }) {
   const mobile = useMobile();
-  const [tab, setTab] = useState('simplified');
+  const { startConversation } = useConversations();
+  const [tab, setTab]         = useState('simplified');
+  const [contacting, setContacting] = useState(false);
 
   return (
     <div style={{ flex: 1, overflow: 'auto', background: '#f4f8ff' }}>
@@ -72,9 +75,21 @@ export function ResearchDetail({ project, onBack, onContact }) {
                   <div style={{ fontSize: 11, color: '#6b7fa3' }}>{project.researcher.institution}</div>
                 </div>
               </div>
-              <button onClick={() => onContact(project)}
-                style={{ width: '100%', background: 'linear-gradient(135deg,#3b8eff,#0040cc)', border: 'none', borderRadius: 8, padding: '11px', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
-                💬 Iniciar Contato
+              <button
+                onClick={async () => {
+                  setContacting(true);
+                  try {
+                    const conv = await startConversation(project);
+                    onContact(conv.id);
+                  } catch (err) {
+                    console.error('Erro ao iniciar contato:', err);
+                  } finally {
+                    setContacting(false);
+                  }
+                }}
+                disabled={contacting}
+                style={{ width: '100%', background: 'linear-gradient(135deg,#3b8eff,#0040cc)', border: 'none', borderRadius: 8, padding: '11px', color: '#fff', fontSize: 13, fontWeight: 700, cursor: contacting ? 'default' : 'pointer', fontFamily: 'inherit', opacity: contacting ? 0.7 : 1 }}>
+                {contacting ? 'Iniciando...' : '💬 Iniciar Contato'}
               </button>
             </div>
             <div style={{ background: '#ffffff', border: '1px solid rgba(0,60,180,0.1)', borderRadius: 12, padding: '14px', display: 'flex', gap: 14, boxShadow: '0 1px 6px rgba(0,60,180,0.04)' }}>

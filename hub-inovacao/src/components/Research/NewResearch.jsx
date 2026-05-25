@@ -1,38 +1,75 @@
 import { useState } from 'react';
 import { AREAS, TYPES, INSTITUTIONS, ODS_LIST } from '../../data';
 import { useMobile } from '../../hooks/useMobile';
+import { useProjectMutations } from '../../hooks/useProjectMutations';
+import { supabase } from '../../lib/supabase';
 
 const STEPS = ['Dados Básicos', 'Resumo Técnico', 'Simplificação IA', 'ODS & Revisão', 'Enviar'];
 
 export function NewResearch({ onDone }) {
   const mobile = useMobile();
-  const [step, setStep] = useState(1);
-  const [form, setForm] = useState({ title: '', area: '', type: '', institution: 'UFPE', year: '2025', keywords: '', abstract: '', simplified: '', ods: [] });
+  const { createProject } = useProjectMutations();
+
+  const [step, setStep]           = useState(1);
+  const [form, setForm]           = useState({ title: '', area: '', type: '', institution: 'UFPE', year: String(new Date().getFullYear()), keywords: '', abstract: '', simplified: '', ods: [] });
   const [aiLoading, setAiLoading] = useState(false);
-  const [aiText, setAiText] = useState('');
-  const [aiDone, setAiDone] = useState(false);
+  const [aiText, setAiText]       = useState('');
+  const [aiDone, setAiDone]       = useState(false);
   const [suggestedOds, setSuggestedOds] = useState([]);
   const [submitted, setSubmitted] = useState(false);
+  const [submitError, setSubmitError] = useState('');
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
-  const simulateAI = () => {
+  const callAI = async () => {
+    if (!form.abstract && !form.title) return;
     setAiLoading(true); setAiText(''); setAiDone(false);
-    const simplified = `Esta pesquisa busca ${form.title.toLowerCase() || 'estudar um tema relevante'} de forma prática e acessível. O trabalho foi desenvolvido em ${form.institution} e tem como foco principal trazer soluções reais para a comunidade de Recife, usando metodologias modernas e dados locais. Os resultados podem ser aplicados diretamente por gestores públicos e empresas parceiras na cidade.`;
-    let i = 0;
-    const interval = setInterval(() => {
-      i += 3;
-      setAiText(simplified.slice(0, i));
-      if (i >= simplified.length) {
-        clearInterval(interval);
-        setAiLoading(false); setAiDone(true); set('simplified', simplified);
-        const map = { 'Saúde': [3, 11], 'Tecnologia': [9, 11], 'Educação': [4, 10], 'Meio Ambiente': [13, 15, 11], 'Urbanismo': [11, 1], 'Economia': [8, 1], 'Segurança Pública': [16, 11], 'Agro & Alimentação': [2, 1] };
-        setSuggestedOds(map[form.area] || [9, 11]);
-      }
-    }, 25);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('simplify', {
+        body: { abstract: form.abstract, title: form.title, institution: form.institution, area: form.area },
+      });
+
+      if (error) throw error;
+
+      const simplified = data?.simplified || '';
+      setAiText(simplified);
+      set('simplified', simplified);
+      setAiDone(true);
+
+      // Sugestão de ODS por área
+      const map = { 'Saúde': [3, 11], 'Tecnologia': [9, 11], 'Educação': [4, 10], 'Meio Ambiente': [13, 15, 11], 'Urbanismo': [11, 1], 'Economia': [8, 1], 'Segurança Pública': [16, 11], 'Agro & Alimentação': [2, 1] };
+      setSuggestedOds(map[form.area] || [9, 11]);
+    } catch {
+      // Fallback: simulação local se Edge Function não estiver implantada
+      const fallback = `Esta pesquisa busca ${form.title.toLowerCase() || 'estudar um tema relevante'} de forma prática e acessível. O trabalho foi desenvolvido em ${form.institution} e tem como foco principal trazer soluções reais para a comunidade de Recife, usando metodologias modernas e dados locais.`;
+      let i = 0;
+      const interval = setInterval(() => {
+        i += 4;
+        setAiText(fallback.slice(0, i));
+        if (i >= fallback.length) {
+          clearInterval(interval);
+          setAiLoading(false); setAiDone(true); set('simplified', fallback);
+          const map = { 'Saúde': [3, 11], 'Tecnologia': [9, 11], 'Educação': [4, 10], 'Meio Ambiente': [13, 15, 11], 'Urbanismo': [11, 1], 'Economia': [8, 1], 'Segurança Pública': [16, 11], 'Agro & Alimentação': [2, 1] };
+          setSuggestedOds(map[form.area] || [9, 11]);
+        }
+      }, 20);
+      return;
+    }
+    setAiLoading(false);
   };
 
   const toggleOds = (id) => setForm(f => ({ ...f, ods: f.ods.includes(id) ? f.ods.filter(x => x !== id) : [...f.ods, id] }));
+
+  const handleSubmit = async () => {
+    setSubmitError('');
+    try {
+      await createProject(form);
+      setSubmitted(true);
+    } catch (err) {
+      setSubmitError(err.message || 'Erro ao enviar pesquisa. Tente novamente.');
+    }
+  };
 
   if (submitted) {
     return (
@@ -40,7 +77,7 @@ export function NewResearch({ onDone }) {
         <div style={{ width: 72, height: 72, borderRadius: '50%', background: 'rgba(5,150,105,0.12)', border: '2px solid #059669', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32 }}>✓</div>
         <div style={{ textAlign: 'center' }}>
           <h2 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: '#0d1f3c' }}>Pesquisa enviada para aprovação!</h2>
-          <p style={{ color: '#6b7fa3', fontSize: 14, marginTop: 8 }}>A instituição irá revisar e publicar em breve. Você receberá uma notificação.</p>
+          <p style={{ color: '#6b7fa3', fontSize: 14, marginTop: 8 }}>A instituição irá revisar e publicar em breve.</p>
         </div>
         <button onClick={onDone} style={{ background: 'linear-gradient(135deg,#3b8eff,#0040cc)', border: 'none', borderRadius: 8, padding: '12px 28px', color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>Ver Minhas Pesquisas</button>
       </div>
@@ -67,6 +104,7 @@ export function NewResearch({ onDone }) {
       </div>
 
       <div style={{ padding: mobile ? '14px 16px' : '28px 32px' }}>
+        {/* Step 1 */}
         {step === 1 && (
           <div style={ws.card}>
             <h3 style={ws.stepTitle}>Dados Básicos do Projeto</h3>
@@ -107,6 +145,7 @@ export function NewResearch({ onDone }) {
           </div>
         )}
 
+        {/* Step 2 */}
         {step === 2 && (
           <div style={ws.card}>
             <h3 style={ws.stepTitle}>Resumo Técnico</h3>
@@ -120,12 +159,13 @@ export function NewResearch({ onDone }) {
           </div>
         )}
 
+        {/* Step 3 — AI */}
         {step === 3 && (
           <div style={ws.card}>
             <h3 style={ws.stepTitle}>✨ Simplificação por IA</h3>
             <p style={{ fontSize: 14, color: '#6b7fa3', marginTop: 0, marginBottom: 20 }}>Geramos automaticamente uma versão em linguagem acessível. Você pode editar antes de publicar.</p>
             {!aiLoading && !aiDone && (
-              <button onClick={simulateAI} style={{ ...ws.btn, display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'center' }}>
+              <button onClick={callAI} style={{ ...ws.btn, display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'center' }}>
                 <span>✨</span> Gerar versão simplificada com IA
               </button>
             )}
@@ -150,13 +190,14 @@ export function NewResearch({ onDone }) {
           </div>
         )}
 
+        {/* Step 4 — ODS */}
         {step === 4 && (
           <div style={ws.card}>
             <h3 style={ws.stepTitle}>ODS e Revisão Final</h3>
             {suggestedOds.length > 0 && (
               <div style={{ background: 'rgba(0,96,224,0.05)', border: '1px solid rgba(0,96,224,0.15)', borderRadius: 8, padding: '12px 16px', marginBottom: 4, fontSize: 13, color: '#4a5a7a' }}>
-                💡 A IA sugere os ODS {suggestedOds.join(' e ')} com base no conteúdo da sua pesquisa.
-                <button onClick={() => setForm(f => ({ ...f, ods: suggestedOds }))} style={{ marginLeft: 8, background: 'rgba(0,96,224,0.1)', border: '1px solid rgba(0,96,224,0.25)', borderRadius: 4, padding: '2px 10px', color: '#0060e0', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit', fontWeight: 600 }}>Aplicar sugestão</button>
+                💡 Sugestão automática: ODS {suggestedOds.join(' e ')}.
+                <button onClick={() => setForm(f => ({ ...f, ods: suggestedOds }))} style={{ marginLeft: 8, background: 'rgba(0,96,224,0.1)', border: '1px solid rgba(0,96,224,0.25)', borderRadius: 4, padding: '2px 10px', color: '#0060e0', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit', fontWeight: 600 }}>Aplicar</button>
               </div>
             )}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(200px,1fr))', gap: 8 }}>
@@ -171,6 +212,7 @@ export function NewResearch({ onDone }) {
           </div>
         )}
 
+        {/* Step 5 */}
         {step === 5 && (
           <div style={ws.card}>
             <h3 style={ws.stepTitle}>Pré-visualização</h3>
@@ -190,8 +232,9 @@ export function NewResearch({ onDone }) {
               </div>
             </div>
             <div style={{ background: 'rgba(5,150,105,0.07)', border: '1px solid rgba(5,150,105,0.2)', borderRadius: 8, padding: '12px 16px', fontSize: 13, color: '#4a5a7a' }}>
-              ✓ Ao enviar, a pesquisa será encaminhada para aprovação pela sua instituição antes de ser publicada.
+              ✓ Ao enviar, a pesquisa será encaminhada para aprovação institucional.
             </div>
+            {submitError && <div style={{ fontSize: 13, color: '#dc2626', background: 'rgba(220,38,38,0.07)', borderRadius: 6, padding: '8px 12px' }}>{submitError}</div>}
           </div>
         )}
 
@@ -199,7 +242,7 @@ export function NewResearch({ onDone }) {
           <button onClick={() => step > 1 ? setStep(s => s - 1) : null} style={{ ...ws.btnSecondary, visibility: step === 1 ? 'hidden' : 'visible' }}>← Anterior</button>
           {step < 5
             ? <button onClick={() => step === 3 && !aiDone ? null : setStep(s => s + 1)} style={{ ...ws.btn, opacity: step === 3 && !aiDone ? 0.4 : 1 }}>Próximo →</button>
-            : <button onClick={() => setSubmitted(true)} style={ws.btn}>🚀 Enviar para Aprovação</button>
+            : <button onClick={handleSubmit} style={ws.btn}>🚀 Enviar para Aprovação</button>
           }
         </div>
       </div>
