@@ -4,14 +4,14 @@ export function MobileNav({ nav, setNav, user }) {
     ? [
         { id: 'dashboard',    icon: '◎', label: 'Explorar' },
         { id: 'govdashboard', icon: '◈', label: 'Painel' },
-        { id: 'approvals',    icon: '✓', label: 'Aprovações', badge: 3 },
+        { id: 'approvals',    icon: '✓', label: 'Aprovações' },
         { id: 'connections',  icon: '🔗', label: 'Conexões' },
-        { id: 'chat',         icon: '✉', label: 'Chat', badge: 1 },
+        { id: 'chat',         icon: '✉', label: 'Chat' },
       ]
     : [
         { id: 'dashboard',  icon: '◎', label: 'Explorar' },
         { id: 'myresearch', icon: '⊞', label: 'Pesquisas' },
-        { id: 'chat',       icon: '✉', label: 'Chat', badge: 1 },
+        { id: 'chat',       icon: '✉', label: 'Chat' },
         { id: 'new',        icon: '+', label: 'Cadastrar', accent: true },
       ];
 

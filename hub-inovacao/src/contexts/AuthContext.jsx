@@ -42,14 +42,8 @@ export function AuthProvider({ children }) {
     if (error) throw error;
   };
 
-  // Cadastro: cria usuário no Auth + insere perfil
+  // Cadastro: cria usuário no Auth + perfil via trigger (security definer)
   const signUp = async ({ email, password, name, institution, role }) => {
-    const { data, error } = await supabase.auth.signUp({ email, password });
-    if (error) throw error;
-
-    const userId = data.user?.id;
-    if (!userId) throw new Error('Erro ao criar usuário');
-
     const avatar = name
       .split(' ')
       .filter(Boolean)
@@ -57,11 +51,12 @@ export function AuthProvider({ children }) {
       .map(w => w[0].toUpperCase())
       .join('');
 
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .insert({ id: userId, name, role, institution, avatar });
-
-    if (profileError) throw profileError;
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { name, role, institution, avatar } },
+    });
+    if (error) throw error;
   };
 
   const signOut = async () => {

@@ -7,11 +7,17 @@ export function Approvals() {
   const [expanded, setExpanded] = useState(null);
   const [feedback, setFeedback] = useState({});
   const [done, setDone]         = useState([]);
+  const [error, setError]       = useState('');
 
   const decide = async (item, status) => {
-    if (status === 'approved') await approve(item.id);
-    else                       await reject(item.id);
-    setDone(prev => [...prev, { ...item, status }]);
+    setError('');
+    try {
+      if (status === 'approved') await approve(item.id);
+      else                       await reject(item.id);
+      setDone(prev => [...prev, { ...item, status }]);
+    } catch (err) {
+      setError(err.message);
+    }
   };
 
   const formatDate = (iso) =>
@@ -27,6 +33,11 @@ export function Approvals() {
       </div>
 
       <div style={{ padding: '24px 32px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {error && (
+          <div style={{ background: 'rgba(220,38,38,0.08)', border: '1px solid rgba(220,38,38,0.3)', borderRadius: 8, padding: '12px 16px', color: '#dc2626', fontSize: 13, fontWeight: 500 }}>
+            ⚠ {error}
+          </div>
+        )}
         {loading ? (
           <div style={{ textAlign: 'center', padding: 48, color: '#6b7fa3', fontSize: 13 }}>⏳ Carregando...</div>
         ) : (

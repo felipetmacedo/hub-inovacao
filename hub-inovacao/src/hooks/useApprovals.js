@@ -15,7 +15,8 @@ export function useApprovals() {
       .eq('status', 'review')
       .order('updated_at', { ascending: true });
 
-    if (!error) setItems(data || []);
+    if (error) console.error('[useApprovals]', error);
+    else setItems(data || []);
     setLoading(false);
   }, []);
 

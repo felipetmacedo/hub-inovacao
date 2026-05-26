@@ -47,19 +47,25 @@ export function useProjectMutations() {
 
   // Usado por gov/org na tela de aprovações
   const approveProject = async (id) => {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('research_projects')
       .update({ status: 'published' })
-      .eq('id', id);
+      .eq('id', id)
+      .select('id')
+      .single();
     if (error) throw error;
+    if (!data) throw new Error('Aprovação bloqueada por política RLS. Rode o SQL de permissões no Supabase.');
   };
 
   const rejectProject = async (id) => {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('research_projects')
-      .update({ status: 'draft' }) // devolve para rascunho com feedback
-      .eq('id', id);
+      .update({ status: 'draft' })
+      .eq('id', id)
+      .select('id')
+      .single();
     if (error) throw error;
+    if (!data) throw new Error('Reprovação bloqueada por política RLS. Rode o SQL de permissões no Supabase.');
   };
 
   return { createProject, updateProject, hideProject, approveProject, rejectProject };

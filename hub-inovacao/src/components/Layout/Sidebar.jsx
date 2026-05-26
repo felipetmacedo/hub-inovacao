@@ -4,15 +4,15 @@ export function Sidebar({ nav, setNav, user, onLogout }) {
   const researcherItems = [
     { id: 'dashboard',  icon: '◎', label: 'Explorar' },
     { id: 'myresearch', icon: '⊞', label: 'Minhas Pesquisas' },
-    { id: 'chat',       icon: '✉', label: 'Mensagens', badge: 1 },
+    { id: 'chat',       icon: '✉', label: 'Mensagens' },
     { id: 'new',        icon: '+', label: 'Nova Pesquisa', accent: true },
   ];
   const govItems = [
     { id: 'dashboard',    icon: '◎', label: 'Explorar' },
     { id: 'govdashboard', icon: '◈', label: 'Painel do Gestor' },
-    { id: 'approvals',    icon: '✓', label: 'Aprovações', badge: 3 },
+    { id: 'approvals',    icon: '✓', label: 'Aprovações' },
     { id: 'connections',  icon: '🔗', label: 'Conexões' },
-    { id: 'chat',         icon: '✉', label: 'Mensagens', badge: 1 },
+    { id: 'chat',         icon: '✉', label: 'Mensagens' },
   ];
   const items = (user.role === 'gov' || user.role === 'org') ? govItems : researcherItems;
 
