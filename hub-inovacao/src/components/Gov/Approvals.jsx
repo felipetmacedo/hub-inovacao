@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { ODS_LIST } from '../../data';
 import { useApprovals } from '../../hooks/useApprovals';
 
-export function Approvals() {
-  const { items, loading, approve, reject } = useApprovals();
+export function Approvals({ onDetail, filterInstitution }) {
+  const { items, loading, approve, reject } = useApprovals(filterInstitution);
   const [done, setDone] = useState([]);
   const [error, setError]       = useState('');
 
@@ -46,7 +46,7 @@ export function Approvals() {
                 {items.map(item => (
                   <div key={item.id} style={{ background: '#ffffff', border: '1px solid rgba(0,60,180,0.1)', borderRadius: 12, overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,60,180,0.05)' }}>
                     <div style={{ padding: '18px 20px', display: 'flex', alignItems: 'flex-start', gap: 16 }}>
-                      <div style={{ flex: 1, minWidth: 0 }}>
+                      <div onClick={() => onDetail?.(item)} style={{ flex: 1, minWidth: 0, cursor: onDetail ? 'pointer' : 'default' }}>
                         <div style={{ display: 'flex', gap: 6, marginBottom: 7 }}>
                           <span style={{ fontSize: 10, fontWeight: 700, color: '#0060e0', background: 'rgba(0,96,224,0.1)', borderRadius: 3, padding: '2px 7px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{item.area}</span>
                           <span style={{ fontSize: 10, color: '#6b7fa3', background: 'rgba(0,0,0,0.04)', borderRadius: 3, padding: '2px 7px' }}>{item.type}</span>

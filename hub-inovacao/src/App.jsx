@@ -19,6 +19,7 @@ export default function App() {
 
   const [nav, setNav]               = useState('dashboard');
   const [detail, setDetail]         = useState(null);
+  const [detailOrigin, setDetailOrigin] = useState('dashboard');
   const [chatConvId, setChatConvId] = useState(null);
   const [editingProject, setEditingProject] = useState(null);
 
@@ -38,8 +39,9 @@ export default function App() {
     return <AuthScreen />;
   }
 
-  const handleDetail = (project) => {
+  const handleDetail = (project, origin = 'dashboard') => {
     setDetail(project);
+    setDetailOrigin(origin);
     setNav('detail');
   };
 
@@ -62,14 +64,12 @@ export default function App() {
   const defaultNav = profile.role === 'gov' || profile.role === 'org' ? 'govdashboard' : 'dashboard';
 
   const renderContent = () => {
-    const n = nav === 'dashboard' && (profile.role === 'gov' || profile.role === 'org')
-      ? 'govdashboard'
-      : nav;
+    const n = nav;
 
-    if (n === 'govdashboard') return <GovDashboard onApprovals={() => navigate('approvals')} onDetail={handleDetail} />;
-    if (n === 'approvals')    return <Approvals />;
+    if (n === 'govdashboard') return <GovDashboard onApprovals={() => navigate('approvals')} onDetail={handleDetail} onExplore={() => navigate('dashboard')} filterInstitution={profile.role === 'org' ? profile.institution : null} />;
+    if (n === 'approvals' && profile.role === 'org') return <Approvals onDetail={(p) => handleDetail(p, 'approvals')} filterInstitution={profile.institution} />;
     if (n === 'connections')  return <Connections onChat={handleContact} />;
-    if (n === 'detail' && detail) return <ResearchDetail project={detail} onBack={() => navigate('dashboard')} onContact={handleContact} />;
+    if (n === 'detail' && detail) return <ResearchDetail project={detail} onBack={() => navigate(detailOrigin)} onContact={handleContact} />;
     if (n === 'new')          return <NewResearch onDone={() => navigate('myresearch')} />;
     if (n === 'edit')         return <NewResearch project={editingProject} onDone={() => navigate('myresearch')} />;
     if (n === 'chat')         return <Chat initialConvId={chatConvId} />;

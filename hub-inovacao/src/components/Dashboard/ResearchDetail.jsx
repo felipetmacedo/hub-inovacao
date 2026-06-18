@@ -1,12 +1,15 @@
 import { useState } from 'react';
 import { useMobile } from '../../hooks/useMobile';
 import { useConversations } from '../../hooks/useConversations';
+import { useAuth } from '../../contexts/AuthContext';
 import { OdsBadge } from '../shared/OdsBadge';
 import { Avatar } from '../shared/Avatar';
 
 export function ResearchDetail({ project, onBack, onContact }) {
   const mobile = useMobile();
+  const { profile } = useAuth();
   const { startConversation } = useConversations();
+  const isOwnProject = profile?.id === project.researcher_id;
   const [tab, setTab]           = useState('simplified');
   const [contacting, setContacting] = useState(false);
   const [contactError, setContactError] = useState('');
@@ -76,28 +79,36 @@ export function ResearchDetail({ project, onBack, onContact }) {
                   <div style={{ fontSize: 11, color: '#6b7fa3' }}>{project.researcher.institution}</div>
                 </div>
               </div>
-              <button
-                onClick={async () => {
-                  setContacting(true);
-                  setContactError('');
-                  try {
-                    const conv = await startConversation(project);
-                    onContact(conv.id);
-                  } catch (err) {
-                    console.error('Erro ao iniciar contato:', err);
-                    setContactError('Não foi possível iniciar conversa. Tente novamente.');
-                  } finally {
-                    setContacting(false);
-                  }
-                }}
-                disabled={contacting}
-                style={{ width: '100%', background: 'linear-gradient(135deg,#3b8eff,#0040cc)', border: 'none', borderRadius: 8, padding: '11px', color: '#fff', fontSize: 13, fontWeight: 700, cursor: contacting ? 'default' : 'pointer', fontFamily: 'inherit', opacity: contacting ? 0.7 : 1 }}>
-                {contacting ? 'Iniciando...' : '💬 Iniciar Contato'}
-              </button>
-              {contactError && (
-                <div style={{ marginTop: 8, fontSize: 12, color: '#dc2626', background: 'rgba(220,38,38,0.07)', border: '1px solid rgba(220,38,38,0.2)', borderRadius: 6, padding: '7px 10px' }}>
-                  ⚠ {contactError}
+              {isOwnProject ? (
+                <div style={{ width: '100%', background: 'rgba(0,60,180,0.05)', border: '1px solid rgba(0,60,180,0.12)', borderRadius: 8, padding: '11px', color: '#6b7fa3', fontSize: 13, fontWeight: 600, textAlign: 'center' }}>
+                  Sua pesquisa
                 </div>
+              ) : (
+                <>
+                  <button
+                    onClick={async () => {
+                      setContacting(true);
+                      setContactError('');
+                      try {
+                        const conv = await startConversation(project);
+                        onContact(conv.id);
+                      } catch (err) {
+                        console.error('Erro ao iniciar contato:', err);
+                        setContactError('Não foi possível iniciar conversa. Tente novamente.');
+                      } finally {
+                        setContacting(false);
+                      }
+                    }}
+                    disabled={contacting}
+                    style={{ width: '100%', background: 'linear-gradient(135deg,#3b8eff,#0040cc)', border: 'none', borderRadius: 8, padding: '11px', color: '#fff', fontSize: 13, fontWeight: 700, cursor: contacting ? 'default' : 'pointer', fontFamily: 'inherit', opacity: contacting ? 0.7 : 1 }}>
+                    {contacting ? 'Iniciando...' : '💬 Iniciar Contato'}
+                  </button>
+                  {contactError && (
+                    <div style={{ marginTop: 8, fontSize: 12, color: '#dc2626', background: 'rgba(220,38,38,0.07)', border: '1px solid rgba(220,38,38,0.2)', borderRadius: 6, padding: '7px 10px' }}>
+                      ⚠ {contactError}
+                    </div>
+                  )}
+                </>
               )}
             </div>
             <div style={{ background: '#ffffff', border: '1px solid rgba(0,60,180,0.1)', borderRadius: 12, padding: '14px', display: 'flex', gap: 14, boxShadow: '0 1px 6px rgba(0,60,180,0.04)' }}>

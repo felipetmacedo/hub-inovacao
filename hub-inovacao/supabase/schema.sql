@@ -7,8 +7,8 @@
 create table if not exists public.profiles (
   id        uuid references auth.users on delete cascade primary key,
   name      text        not null,
-  role      text        not null check (role in ('researcher', 'gov', 'org')),
-  institution text      not null,
+  role      text        not null check (role in ('researcher', 'gov', 'org', 'investidor')),
+  institution text,
   avatar    text        not null,  -- 2 iniciais, ex: "AL"
   created_at timestamptz default now()
 );

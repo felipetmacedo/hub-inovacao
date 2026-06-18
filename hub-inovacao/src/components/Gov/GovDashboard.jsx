@@ -2,9 +2,13 @@ import { ODS_LIST } from '../../data';
 import { useProjects } from '../../hooks/useProjects';
 import { useApprovals } from '../../hooks/useApprovals';
 
-export function GovDashboard({ onApprovals, onDetail }) {
-  const { projects, loading } = useProjects();
+export function GovDashboard({ onApprovals, onDetail, onExplore, filterInstitution }) {
+  const { projects: allProjects, loading } = useProjects();
   const { items: pending }    = useApprovals();
+
+  const projects = filterInstitution
+    ? allProjects.filter(p => p.institution === filterInstitution)
+    : allProjects;
 
   const areaCount = {};
   projects.forEach(p => { areaCount[p.area] = (areaCount[p.area] || 0) + 1; });
@@ -22,7 +26,11 @@ export function GovDashboard({ onApprovals, onDetail }) {
       <div style={{ background: '#ffffff', borderBottom: '1px solid rgba(0,60,180,0.1)', padding: '22px 32px' }}>
         <div>
           <h1 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: '#0d1f3c', letterSpacing: '-0.4px' }}>Painel do Gestor</h1>
-          <p style={{ margin: '5px 0 0', fontSize: 13, color: '#6b7fa3' }}>Visão geral do ecossistema de inovação de Recife</p>
+          <p style={{ margin: '5px 0 0', fontSize: 13, color: '#6b7fa3' }}>
+            {filterInstitution
+              ? `Dados de pesquisa da ${filterInstitution}`
+              : 'Visão geral do ecossistema de inovação de Recife'}
+          </p>
         </div>
       </div>
 
@@ -98,7 +106,7 @@ export function GovDashboard({ onApprovals, onDetail }) {
         <div style={{ background: '#ffffff', border: '1px solid rgba(0,60,180,0.1)', borderRadius: 12, padding: '20px', boxShadow: '0 1px 4px rgba(0,60,180,0.05)' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
             <h3 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: '#0d1f3c' }}>Pesquisas em Destaque</h3>
-            <span style={{ fontSize: 12, color: '#0060e0', cursor: 'pointer', fontWeight: 600 }}>Ver todas →</span>
+            <span onClick={onExplore} style={{ fontSize: 12, color: '#0060e0', cursor: 'pointer', fontWeight: 600 }}>Ver todas →</span>
           </div>
           {loading ? (
             <div style={{ color: '#6b7fa3', fontSize: 13, textAlign: 'center', padding: 20 }}>⏳ Carregando...</div>

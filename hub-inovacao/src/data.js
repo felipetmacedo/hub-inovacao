@@ -22,6 +22,19 @@ export const AREAS = ["Saúde", "Tecnologia", "Educação", "Meio Ambiente", "Ur
 export const TYPES = ["Aplicada", "Básica", "Extensão", "TCC", "Dissertação", "Tese"];
 export const INSTITUTIONS = ["UFPE", "UNICAP", "CESAR School", "UFRPE", "UPE"];
 
+export const UNIVERSITIES = [
+  { value: "UFPE",          label: "UFPE — Universidade Federal de Pernambuco" },
+  { value: "UFRPE",         label: "UFRPE — Universidade Federal Rural de Pernambuco" },
+  { value: "UPE",           label: "UPE — Universidade de Pernambuco" },
+  { value: "UNICAP",        label: "UNICAP — Universidade Católica de Pernambuco" },
+  { value: "CESAR School",  label: "CESAR School" },
+  { value: "IFPE",          label: "IFPE — Instituto Federal de Pernambuco" },
+  { value: "UNINABUCO",     label: "UNINABUCO — Centro Universitário Maurício de Nassau" },
+  { value: "FBV",           label: "FBV — Centro Universitário Wyden" },
+  { value: "ESPM Recife",   label: "ESPM Recife" },
+  { value: "Outra",         label: "Outra instituição" },
+];
+
 export const RESEARCHERS = [
   { id: 1, name: "Dra. Ana Lima",        institution: "UFPE",        avatar: "AL", area: "Saúde" },
   { id: 2, name: "Prof. Carlos Mendes",  institution: "CESAR School", avatar: "CM", area: "Tecnologia" },

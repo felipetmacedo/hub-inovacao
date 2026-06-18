@@ -2,18 +2,22 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useProjectMutations } from './useProjectMutations';
 
-export function useApprovals() {
+export function useApprovals(filterInstitution) {
   const [items, setItems]     = useState([]);
   const [loading, setLoading] = useState(true);
   const { approveProject, rejectProject } = useProjectMutations();
 
   const load = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await supabase
+    let query = supabase
       .from('research_projects')
       .select('*, researcher:profiles(id, name, institution, avatar)')
       .eq('status', 'review')
       .order('updated_at', { ascending: true });
+
+    if (filterInstitution) query = query.eq('institution', filterInstitution);
+
+    const { data, error } = await query;
 
     if (error) console.error('[useApprovals]', error);
     else setItems(data || []);

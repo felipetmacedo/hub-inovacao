@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { UNIVERSITIES } from '../../data';
 
 export function AuthScreen() {
   const { signIn, signUp } = useAuth();
@@ -36,7 +37,7 @@ export function AuthScreen() {
       setStep(2);
       return;
     }
-    if (!form.institution) { setError('Informe a instituição.'); return; }
+    if (role !== 'investidor' && !form.institution) { setError('Informe a instituição.'); return; }
     if (!form.password || form.password.length < 6) { setError('Senha deve ter mínimo 6 caracteres.'); return; }
     if (form.password !== form.confirmPassword) { setError('As senhas não coincidem.'); return; }
 
@@ -90,7 +91,7 @@ export function AuthScreen() {
             <div style={s.field}>
               <label style={s.label}>Perfil de acesso</label>
               <div style={{ display: 'flex', gap: 6 }}>
-                {[['researcher', '🔬', 'Pesquisador'], ['gov', '🏛️', 'Gestor Público'], ['org', '🏢', 'Organização']].map(([r, icon, label]) => (
+                {[['researcher', '🔬', 'Pesquisador'], ['gov', '🏛️', 'Gestor Público'], ['org', '🏫', 'Universidade'], ['investidor', '💼', 'Investidor']].map(([r, icon, label]) => (
                   <button key={r} type="button" onClick={() => setRole(r)}
                     style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, padding: '8px 6px', background: role === r ? '#eef4ff' : '#f7faff', border: `1px solid ${role === r ? '#0060e0' : 'rgba(0,60,180,0.12)'}`, borderRadius: 7, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s' }}>
                     <span style={{ fontSize: 16 }}>{icon}</span>
@@ -115,13 +116,18 @@ export function AuthScreen() {
         ) : (
           <form onSubmit={handleRegister} style={s.form}>
             {step === 1 && <>
-              <div style={s.fieldRow}>
-                {['researcher', 'org', 'gov'].map(r => (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                {[
+                  ['researcher', '🔬', 'Pesquisador',  'Univ. / Instituto'],
+                  ['org',        '🏫', 'Universidade', 'Aprova pesquisas'],
+                  ['gov',        '🏛️', 'Gestor Público','Gov. / Prefeitura'],
+                  ['investidor', '💼', 'Investidor',   'Empresa / Fundo'],
+                ].map(([r, icon, label, sub]) => (
                   <button key={r} type="button" onClick={() => setRole(r)}
-                    style={{ ...s.roleBtn, ...(role === r ? s.roleBtnActive : {}), flex: r === 'gov' ? '0 0 calc(33% - 5px)' : 1 }}>
-                    <span style={{ fontSize: 22 }}>{r === 'researcher' ? '🔬' : r === 'org' ? '🏢' : '🏛️'}</span>
-                    <span style={{ fontWeight: 700, fontSize: 12, color: '#0d1f3c' }}>{r === 'researcher' ? 'Pesquisador' : r === 'org' ? 'Organização' : 'Gestor Público'}</span>
-                    <span style={{ fontSize: 10, color: '#6b7fa3' }}>{r === 'researcher' ? 'Univ. / Instituto' : r === 'org' ? 'Empresa' : 'Gov. / Prefeitura'}</span>
+                    style={{ ...s.roleBtn, ...(role === r ? s.roleBtnActive : {}) }}>
+                    <span style={{ fontSize: 22 }}>{icon}</span>
+                    <span style={{ fontWeight: 700, fontSize: 12, color: '#0d1f3c' }}>{label}</span>
+                    <span style={{ fontSize: 10, color: '#6b7fa3' }}>{sub}</span>
                   </button>
                 ))}
               </div>
@@ -130,15 +136,26 @@ export function AuthScreen() {
                 <input style={s.input} placeholder="Dr. Nome Sobrenome" value={form.name} onChange={e => set('name', e.target.value)} />
               </div>
               <div style={s.field}>
-                <label style={s.label}>E-mail institucional</label>
-                <input style={s.input} type="email" placeholder="nome@ufpe.br" value={form.email} onChange={e => set('email', e.target.value)} />
+                <label style={s.label}>E-mail</label>
+                <input style={s.input} type="email" placeholder="seu@email.com" value={form.email} onChange={e => set('email', e.target.value)} />
               </div>
             </>}
             {step === 2 && <>
-              <div style={s.field}>
-                <label style={s.label}>{role === 'researcher' ? 'Instituição de ensino' : 'Nome da organização'}</label>
-                <input style={s.input} placeholder={role === 'researcher' ? 'UFPE, UNICAP...' : 'Secretaria, Empresa...'} value={form.institution} onChange={e => set('institution', e.target.value)} />
-              </div>
+              {role !== 'investidor' && (
+                <div style={s.field}>
+                  <label style={s.label}>{role === 'gov' ? 'Órgão / Secretaria' : 'Universidade / Instituição'}</label>
+                  {(role === 'org' || role === 'researcher') ? (
+                    <select style={{ ...s.input, cursor: 'pointer' }} value={form.institution} onChange={e => set('institution', e.target.value)}>
+                      <option value="">Selecione a instituição...</option>
+                      {UNIVERSITIES.map(u => (
+                        <option key={u.value} value={u.value}>{u.label}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input style={s.input} placeholder="Secretaria, Prefeitura..." value={form.institution} onChange={e => set('institution', e.target.value)} />
+                  )}
+                </div>
+              )}
               <div style={s.field}>
                 <label style={s.label}>Senha</label>
                 <input style={s.input} type="password" placeholder="Mínimo 6 caracteres" value={form.password} onChange={e => set('password', e.target.value)} />

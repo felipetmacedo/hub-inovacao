@@ -2,19 +2,34 @@ import { Avatar } from '../shared/Avatar';
 
 export function Sidebar({ nav, setNav, user, onLogout }) {
   const researcherItems = [
-    { id: 'dashboard',  icon: '◎', label: 'Explorar' },
-    { id: 'myresearch', icon: '⊞', label: 'Minhas Pesquisas' },
-    { id: 'chat',       icon: '✉', label: 'Mensagens' },
-    { id: 'new',        icon: '+', label: 'Nova Pesquisa', accent: true },
+    { id: 'dashboard',   icon: '◎', label: 'Explorar' },
+    { id: 'myresearch',  icon: '⊞', label: 'Minhas Pesquisas' },
+    { id: 'connections', icon: '🔗', label: 'Conexões' },
+    { id: 'chat',        icon: '✉', label: 'Mensagens' },
+    { id: 'new',         icon: '+', label: 'Nova Pesquisa', accent: true },
+  ];
+  const investidorItems = [
+    { id: 'dashboard',   icon: '◎', label: 'Explorar' },
+    { id: 'connections', icon: '🔗', label: 'Conexões' },
+    { id: 'chat',        icon: '✉', label: 'Mensagens' },
   ];
   const govItems = [
-    { id: 'dashboard',    icon: '◎', label: 'Explorar' },
     { id: 'govdashboard', icon: '◈', label: 'Painel do Gestor' },
+    { id: 'dashboard',    icon: '◎', label: 'Explorar' },
+    { id: 'connections',  icon: '🔗', label: 'Conexões' },
+    { id: 'chat',         icon: '✉', label: 'Mensagens' },
+  ];
+  const orgItems = [
+    { id: 'govdashboard', icon: '◈', label: 'Painel' },
+    { id: 'dashboard',    icon: '◎', label: 'Explorar' },
     { id: 'approvals',    icon: '✓', label: 'Aprovações' },
     { id: 'connections',  icon: '🔗', label: 'Conexões' },
     { id: 'chat',         icon: '✉', label: 'Mensagens' },
   ];
-  const items = (user.role === 'gov' || user.role === 'org') ? govItems : researcherItems;
+  const items = user.role === 'gov' ? govItems
+    : user.role === 'org'        ? orgItems
+    : user.role === 'investidor' ? investidorItems
+    : researcherItems;
 
   return (
     <aside style={s.root}>
@@ -37,11 +52,21 @@ export function Sidebar({ nav, setNav, user, onLogout }) {
         ))}
       </nav>
 
+      {user.institution && (
+        <div style={{ padding: '8px 14px 0', borderTop: '1px solid rgba(0,60,180,0.08)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(0,96,224,0.07)', border: '1px solid rgba(0,96,224,0.15)', borderRadius: 6, padding: '5px 10px' }}>
+            <span style={{ fontSize: 11 }}>🏫</span>
+            <span style={{ fontSize: 11, fontWeight: 700, color: '#0060e0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.institution}</span>
+          </div>
+        </div>
+      )}
       <div style={s.userCard}>
         <Avatar initials={user.avatar} size={32} />
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 12, fontWeight: 600, color: '#0d1f3c', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.name}</div>
-          <div style={{ fontSize: 10, color: '#6b7fa3' }}>{user.institution}</div>
+          <div style={{ fontSize: 10, color: '#6b7fa3' }}>
+            {user.role === 'researcher' ? 'Pesquisador' : user.role === 'org' ? 'Universidade' : user.role === 'investidor' ? 'Investidor/Empresa' : 'Gestor Público'}
+          </div>
         </div>
         <button onClick={onLogout} title="Sair" style={{ background: 'none', border: 'none', color: '#6b7fa3', cursor: 'pointer', fontSize: 14, padding: '4px' }}>⏻</button>
       </div>
