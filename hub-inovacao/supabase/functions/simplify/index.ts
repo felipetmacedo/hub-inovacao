@@ -8,7 +8,7 @@ Deno.serve(async (req) => {
     return new Response('ok', { headers: corsHeaders });
   }
 
-  console.log('[simplify] v2-gemini invoked, method:', req.method);
+  console.log('[simplify] v3-groq invoked');
 
   try {
     let body: Record<string, unknown>;
@@ -25,8 +25,6 @@ Deno.serve(async (req) => {
       abstract?: string; title?: string; institution?: string;
     };
 
-    console.log('[simplify] payload:', { title, abstractLen: String(abstract ?? '').length });
-
     if (!abstract || !title) {
       return new Response(
         JSON.stringify({ error: 'abstract e title são obrigatórios' }),
@@ -34,59 +32,67 @@ Deno.serve(async (req) => {
       );
     }
 
-    const apiKey = Deno.env.get('GEMINI_API_KEY');
+    const apiKey = Deno.env.get('GROQ_API_KEY');
     if (!apiKey) {
-      console.error('[simplify] GEMINI_API_KEY secret ausente');
+      console.error('[simplify] GROQ_API_KEY secret ausente');
       return new Response(
-        JSON.stringify({ error: 'GEMINI_API_KEY não configurada nos Supabase Secrets' }),
+        JSON.stringify({ error: 'GROQ_API_KEY não configurada nos Supabase Secrets' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log('[simplify] key prefix:', apiKey.substring(0, 6) + '…');
+    console.log('[simplify] calling Groq...');
 
-    const prompt =
-      `Você é um especialista em comunicação científica para o público geral. ` +
-      `Transforme o resumo acadêmico abaixo em linguagem acessível para gestores públicos e empresários de Recife, ` +
-      `sem jargões técnicos. Escreva em português do Brasil, com linguagem clara e envolvente. Use no máximo 3 parágrafos curtos.\n\n` +
-      `Título: ${title}\n` +
-      `Instituição: ${institution ?? 'não informada'}\n` +
-      `Resumo técnico: ${abstract}`;
-
-    const geminiUrl =
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-
-    console.log('[simplify] calling Gemini…');
-
-    const geminiRes = await fetch(geminiUrl, {
+    const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { maxOutputTokens: 500, temperature: 0.7 },
+        model: 'llama-3.3-70b-versatile',
+        messages: [
+          {
+            role: 'system',
+            content:
+              'Você é um especialista em comunicação científica para o público geral. ' +
+              'Sua missão é transformar resumos acadêmicos técnicos em textos acessíveis, mantendo a essência da pesquisa. ' +
+              'Escreva em português do Brasil, com linguagem clara e envolvente, sem jargões. ' +
+              'Use no máximo 3 parágrafos curtos.',
+          },
+          {
+            role: 'user',
+            content:
+              `Transforme este resumo em linguagem acessível para gestores públicos e empresários de Recife:\n\n` +
+              `Título: ${title}\n` +
+              `Instituição: ${institution ?? 'não informada'}\n` +
+              `Resumo técnico: ${abstract}`,
+          },
+        ],
+        max_tokens: 500,
+        temperature: 0.7,
       }),
     });
 
-    console.log('[simplify] Gemini status:', geminiRes.status);
+    console.log('[simplify] Groq status:', groqRes.status);
 
-    if (!geminiRes.ok) {
-      const errText = await geminiRes.text();
-      console.error('[simplify] Gemini error body:', errText);
+    if (!groqRes.ok) {
+      const errText = await groqRes.text();
+      console.error('[simplify] Groq error:', errText);
       return new Response(
-        JSON.stringify({ error: `Gemini retornou ${geminiRes.status} — verifique a chave de API. Detalhes: ${errText.substring(0, 200)}` }),
+        JSON.stringify({ error: `Groq retornou ${groqRes.status}: ${errText.substring(0, 200)}` }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const result = await geminiRes.json();
-    const simplified: string =
-      (result?.candidates?.[0]?.content?.parts?.[0]?.text ?? '').trim();
+    const result = await groqRes.json();
+    const simplified: string = (result?.choices?.[0]?.message?.content ?? '').trim();
 
-    console.log('[simplify] simplified length:', simplified.length);
+    console.log('[simplify] success, length:', simplified.length);
 
     if (!simplified) {
       return new Response(
-        JSON.stringify({ error: 'Gemini não retornou conteúdo. Tente novamente.' }),
+        JSON.stringify({ error: 'Groq não retornou conteúdo. Tente novamente.' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }

@@ -10,7 +10,7 @@ Plataforma que conecta pesquisadores universitários, organizações privadas e 
 |--------|-----------|
 | Frontend | React 19 + Vite 8 (SPA) |
 | Backend/Auth | Supabase (PostgreSQL + Auth + Realtime) |
-| Edge Function (IA) | Deno + Google Gemini 1.5 Flash |
+| Edge Function (IA) | Deno + Groq (Llama 3.3 70B) |
 | Deploy Frontend | Vercel |
 | Deploy Backend | Supabase Cloud (sa-east-1 — São Paulo) |
 
@@ -155,7 +155,7 @@ Cole o conteúdo de `supabase/schema.sql` no **SQL Editor** do painel Supabase e
 supabase/functions/simplify/index.ts
 ```
 
-Deno serverless que recebe o resumo técnico e retorna versão acessível via Google Gemini 1.5 Flash.
+Deno serverless que recebe o resumo técnico e retorna versão acessível via Groq (Llama 3.3 70B).
 
 **Input:**
 ```json
@@ -170,10 +170,10 @@ Deno serverless que recebe o resumo técnico e retorna versão acessível via Go
 **Deploy:**
 ```bash
 supabase functions deploy simplify --project-ref <project-id>
-supabase secrets set GEMINI_API_KEY=<sua-chave>
+supabase secrets set GROQ_API_KEY=gsk_...
 ```
 
-Modelo: `gemini-1.5-flash` · Max tokens: 500 · Temperature: 0.7
+Modelo: `llama-3.3-70b-versatile` (Groq) · Max tokens: 500 · Temperature: 0.7
 
 ---
 
