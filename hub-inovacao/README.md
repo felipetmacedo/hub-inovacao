@@ -10,7 +10,7 @@ Plataforma que conecta pesquisadores universitários, organizações privadas e 
 |--------|-----------|
 | Frontend | React 19 + Vite 8 (SPA) |
 | Backend/Auth | Supabase (PostgreSQL + Auth + Realtime) |
-| Edge Function (IA) | Deno + OpenAI GPT-4o-mini |
+| Edge Function (IA) | Deno + Google Gemini 1.5 Flash |
 | Deploy Frontend | Vercel |
 | Deploy Backend | Supabase Cloud (sa-east-1 — São Paulo) |
 
@@ -155,7 +155,7 @@ Cole o conteúdo de `supabase/schema.sql` no **SQL Editor** do painel Supabase e
 supabase/functions/simplify/index.ts
 ```
 
-Deno serverless que recebe o resumo técnico e retorna versão acessível via OpenAI.
+Deno serverless que recebe o resumo técnico e retorna versão acessível via Google Gemini 1.5 Flash.
 
 **Input:**
 ```json
@@ -170,10 +170,10 @@ Deno serverless que recebe o resumo técnico e retorna versão acessível via Op
 **Deploy:**
 ```bash
 supabase functions deploy simplify --project-ref <project-id>
-supabase secrets set OPENAI_API_KEY=sk-...
+supabase secrets set GEMINI_API_KEY=<sua-chave>
 ```
 
-Modelo: `gpt-4o-mini` · Max tokens: 400 · Temperature: 0.7
+Modelo: `gemini-1.5-flash` · Max tokens: 500 · Temperature: 0.7
 
 ---
 
