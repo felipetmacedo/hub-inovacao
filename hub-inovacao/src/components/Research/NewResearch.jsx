@@ -6,24 +6,40 @@ import { supabase } from '../../lib/supabase';
 
 const STEPS = ['Dados Básicos', 'Resumo Técnico', 'Simplificação IA', 'ODS & Revisão', 'Enviar'];
 
-export function NewResearch({ onDone }) {
+export function NewResearch({ onDone, project }) {
   const mobile = useMobile();
-  const { createProject } = useProjectMutations();
+  const { createProject, editProject } = useProjectMutations();
+  const isEditing = !!project;
+
+  const initialForm = project ? {
+    title:       project.title || '',
+    area:        project.area || '',
+    type:        project.type || '',
+    institution: project.institution || 'UFPE',
+    year:        String(project.year || new Date().getFullYear()),
+    keywords:    (project.keywords || []).join(', '),
+    abstract:    project.abstract || '',
+    simplified:  project.simplified || '',
+    ods:         project.ods || [],
+  } : { title: '', area: '', type: '', institution: 'UFPE', year: String(new Date().getFullYear()), keywords: '', abstract: '', simplified: '', ods: [] };
 
   const [step, setStep]           = useState(1);
-  const [form, setForm]           = useState({ title: '', area: '', type: '', institution: 'UFPE', year: String(new Date().getFullYear()), keywords: '', abstract: '', simplified: '', ods: [] });
+  const [form, setForm]           = useState(initialForm);
   const [aiLoading, setAiLoading] = useState(false);
-  const [aiText, setAiText]       = useState('');
-  const [aiDone, setAiDone]       = useState(false);
+  const [aiText, setAiText]       = useState(project?.simplified || '');
+  const [aiDone, setAiDone]       = useState(isEditing && !!project?.simplified);
+  const [aiError, setAiError]     = useState('');
   const [suggestedOds, setSuggestedOds] = useState([]);
   const [submitted, setSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState('');
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
+  const ODS_MAP = { 'Saúde': [3, 11], 'Tecnologia': [9, 11], 'Educação': [4, 10], 'Meio Ambiente': [13, 15, 11], 'Urbanismo': [11, 1], 'Economia': [8, 1], 'Segurança Pública': [16, 11], 'Agro & Alimentação': [2, 1] };
+
   const callAI = async () => {
     if (!form.abstract && !form.title) return;
-    setAiLoading(true); setAiText(''); setAiDone(false);
+    setAiLoading(true); setAiText(''); setAiDone(false); setAiError('');
 
     try {
       const { data, error } = await supabase.functions.invoke('simplify', {
@@ -33,28 +49,15 @@ export function NewResearch({ onDone }) {
       if (error) throw error;
 
       const simplified = data?.simplified || '';
+      if (!simplified) throw new Error('A IA não retornou conteúdo. Tente novamente.');
+
       setAiText(simplified);
       set('simplified', simplified);
       setAiDone(true);
-
-      // Sugestão de ODS por área
-      const map = { 'Saúde': [3, 11], 'Tecnologia': [9, 11], 'Educação': [4, 10], 'Meio Ambiente': [13, 15, 11], 'Urbanismo': [11, 1], 'Economia': [8, 1], 'Segurança Pública': [16, 11], 'Agro & Alimentação': [2, 1] };
-      setSuggestedOds(map[form.area] || [9, 11]);
-    } catch {
-      // Fallback: simulação local se Edge Function não estiver implantada
-      const fallback = `Esta pesquisa busca ${form.title.toLowerCase() || 'estudar um tema relevante'} de forma prática e acessível. O trabalho foi desenvolvido em ${form.institution} e tem como foco principal trazer soluções reais para a comunidade de Recife, usando metodologias modernas e dados locais.`;
-      let i = 0;
-      const interval = setInterval(() => {
-        i += 4;
-        setAiText(fallback.slice(0, i));
-        if (i >= fallback.length) {
-          clearInterval(interval);
-          setAiLoading(false); setAiDone(true); set('simplified', fallback);
-          const map = { 'Saúde': [3, 11], 'Tecnologia': [9, 11], 'Educação': [4, 10], 'Meio Ambiente': [13, 15, 11], 'Urbanismo': [11, 1], 'Economia': [8, 1], 'Segurança Pública': [16, 11], 'Agro & Alimentação': [2, 1] };
-          setSuggestedOds(map[form.area] || [9, 11]);
-        }
-      }, 20);
-      return;
+      setSuggestedOds(ODS_MAP[form.area] || [9, 11]);
+    } catch (err) {
+      setAiError(err.message || 'Não foi possível gerar a versão simplificada. Verifique sua conexão e tente novamente.');
+      setAiDone(false);
     }
     setAiLoading(false);
   };
@@ -64,7 +67,11 @@ export function NewResearch({ onDone }) {
   const handleSubmit = async () => {
     setSubmitError('');
     try {
-      await createProject(form);
+      if (isEditing) {
+        await editProject(project.id, form);
+      } else {
+        await createProject(form);
+      }
       setSubmitted(true);
     } catch (err) {
       setSubmitError(err.message || 'Erro ao enviar pesquisa. Tente novamente.');
@@ -76,7 +83,9 @@ export function NewResearch({ onDone }) {
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f4f8ff', flexDirection: 'column', gap: 24, padding: 40 }}>
         <div style={{ width: 72, height: 72, borderRadius: '50%', background: 'rgba(5,150,105,0.12)', border: '2px solid #059669', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32 }}>✓</div>
         <div style={{ textAlign: 'center' }}>
-          <h2 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: '#0d1f3c' }}>Pesquisa enviada para aprovação!</h2>
+          <h2 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: '#0d1f3c' }}>
+            {isEditing ? 'Pesquisa atualizada e enviada para aprovação!' : 'Pesquisa enviada para aprovação!'}
+          </h2>
           <p style={{ color: '#6b7fa3', fontSize: 14, marginTop: 8 }}>A instituição irá revisar e publicar em breve.</p>
         </div>
         <button onClick={onDone} style={{ background: 'linear-gradient(135deg,#3b8eff,#0040cc)', border: 'none', borderRadius: 8, padding: '12px 28px', color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>Ver Minhas Pesquisas</button>
@@ -87,7 +96,7 @@ export function NewResearch({ onDone }) {
   return (
     <div style={{ flex: 1, width: '100%', overflow: 'auto', background: '#f4f8ff' }}>
       <div style={{ background: '#ffffff', borderBottom: '1px solid rgba(0,60,180,0.1)', padding: mobile ? '14px 16px' : '20px 32px' }}>
-        <h2 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: '#0d1f3c' }}>Cadastrar Nova Pesquisa</h2>
+        <h2 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: '#0d1f3c' }}>{isEditing ? 'Editar Pesquisa' : 'Cadastrar Nova Pesquisa'}</h2>
         <div style={{ display: 'flex', alignItems: 'center', gap: 0, marginTop: 18, overflowX: 'auto' }}>
           {STEPS.map((s, i) => (
             <div key={s} style={{ display: 'contents' }}>
@@ -164,9 +173,15 @@ export function NewResearch({ onDone }) {
           <div style={ws.card}>
             <h3 style={ws.stepTitle}>✨ Simplificação por IA</h3>
             <p style={{ fontSize: 14, color: '#6b7fa3', marginTop: 0, marginBottom: 20 }}>Geramos automaticamente uma versão em linguagem acessível. Você pode editar antes de publicar.</p>
+            {aiError && (
+              <div style={{ background: 'rgba(220,38,38,0.08)', border: '1px solid rgba(220,38,38,0.3)', borderRadius: 8, padding: '12px 16px', color: '#dc2626', fontSize: 13, marginBottom: 4, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+                <span>⚠ {aiError}</span>
+                <button onClick={callAI} style={{ flexShrink: 0, background: 'rgba(220,38,38,0.1)', border: '1px solid rgba(220,38,38,0.3)', borderRadius: 6, padding: '6px 14px', color: '#dc2626', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>Tentar novamente</button>
+              </div>
+            )}
             {!aiLoading && !aiDone && (
               <button onClick={callAI} style={{ ...ws.btn, display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'center' }}>
-                <span>✨</span> Gerar versão simplificada com IA
+                <span>✨</span> {aiError ? 'Gerar novamente' : 'Gerar versão simplificada com IA'}
               </button>
             )}
             {(aiLoading || aiDone) && (
@@ -231,8 +246,13 @@ export function NewResearch({ onDone }) {
                 })}
               </div>
             </div>
+            {isEditing && (
+              <div style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 8, padding: '12px 16px', fontSize: 13, color: '#b45309' }}>
+                ⚠ Ao salvar, a pesquisa voltará para aprovação institucional antes de ser republicada.
+              </div>
+            )}
             <div style={{ background: 'rgba(5,150,105,0.07)', border: '1px solid rgba(5,150,105,0.2)', borderRadius: 8, padding: '12px 16px', fontSize: 13, color: '#4a5a7a' }}>
-              ✓ Ao enviar, a pesquisa será encaminhada para aprovação institucional.
+              ✓ {isEditing ? 'As alterações serão encaminhadas para revisão institucional.' : 'Ao enviar, a pesquisa será encaminhada para aprovação institucional.'}
             </div>
             {submitError && <div style={{ fontSize: 13, color: '#dc2626', background: 'rgba(220,38,38,0.07)', borderRadius: 6, padding: '8px 12px' }}>{submitError}</div>}
           </div>
@@ -241,8 +261,17 @@ export function NewResearch({ onDone }) {
         <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8 }}>
           <button onClick={() => step > 1 ? setStep(s => s - 1) : null} style={{ ...ws.btnSecondary, visibility: step === 1 ? 'hidden' : 'visible' }}>← Anterior</button>
           {step < 5
-            ? <button onClick={() => step === 3 && !aiDone ? null : setStep(s => s + 1)} style={{ ...ws.btn, opacity: step === 3 && !aiDone ? 0.4 : 1 }}>Próximo →</button>
-            : <button onClick={handleSubmit} style={ws.btn}>🚀 Enviar para Aprovação</button>
+            ? (() => {
+                const step3Blocked = step === 3 && (!aiDone || !form.simplified || form.simplified.trim().length < 20);
+                return (
+                  <button
+                    onClick={() => step3Blocked ? null : setStep(s => s + 1)}
+                    style={{ ...ws.btn, opacity: step3Blocked ? 0.4 : 1, cursor: step3Blocked ? 'not-allowed' : 'pointer' }}
+                    title={step3Blocked ? 'Gere ou edite a versão simplificada antes de continuar.' : undefined}
+                  >Próximo →</button>
+                );
+              })()
+            : <button onClick={handleSubmit} style={ws.btn}>{isEditing ? '💾 Salvar e enviar para revisão' : '🚀 Enviar para Aprovação'}</button>
           }
         </div>
       </div>

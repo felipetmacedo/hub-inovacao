@@ -45,6 +45,29 @@ export function useProjectMutations() {
     return updateProject(id, { status: 'hidden' });
   };
 
+  // Edição pelo pesquisador — sempre volta para review (RF006, RN002)
+  const editProject = async (id, updates) => {
+    const { error } = await supabase
+      .from('research_projects')
+      .update({
+        title:       updates.title,
+        institution: updates.institution,
+        area:        updates.area,
+        type:        updates.type,
+        keywords:    updates.keywords
+          ? updates.keywords.split(',').map(k => k.trim()).filter(Boolean)
+          : [],
+        ods:         updates.ods || [],
+        abstract:    updates.abstract,
+        simplified:  updates.simplified,
+        year:        parseInt(updates.year) || new Date().getFullYear(),
+        status:      'review', // sempre volta para aprovação
+      })
+      .eq('id', id)
+      .eq('researcher_id', profile.id);
+    if (error) throw error;
+  };
+
   // Usado por gov/org na tela de aprovações
   const approveProject = async (id) => {
     const { data, error } = await supabase
@@ -68,5 +91,5 @@ export function useProjectMutations() {
     if (!data) throw new Error('Reprovação bloqueada por política RLS. Rode o SQL de permissões no Supabase.');
   };
 
-  return { createProject, updateProject, hideProject, approveProject, rejectProject };
+  return { createProject, updateProject, hideProject, editProject, approveProject, rejectProject };
 }

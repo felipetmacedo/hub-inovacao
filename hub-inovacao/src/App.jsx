@@ -17,9 +17,10 @@ export default function App() {
   const mobile = useMobile();
   const { profile, loading, signOut } = useAuth();
 
-  const [nav, setNav]           = useState('dashboard');
-  const [detail, setDetail]     = useState(null);
+  const [nav, setNav]               = useState('dashboard');
+  const [detail, setDetail]         = useState(null);
   const [chatConvId, setChatConvId] = useState(null);
+  const [editingProject, setEditingProject] = useState(null);
 
   // Aguarda a sessão carregar
   if (loading) {
@@ -40,6 +41,11 @@ export default function App() {
   const handleDetail = (project) => {
     setDetail(project);
     setNav('detail');
+  };
+
+  const handleEdit = (project) => {
+    setEditingProject(project);
+    setNav('edit');
   };
 
   const handleContact = (convId) => {
@@ -65,8 +71,9 @@ export default function App() {
     if (n === 'connections')  return <Connections onChat={handleContact} />;
     if (n === 'detail' && detail) return <ResearchDetail project={detail} onBack={() => navigate('dashboard')} onContact={handleContact} />;
     if (n === 'new')          return <NewResearch onDone={() => navigate('myresearch')} />;
+    if (n === 'edit')         return <NewResearch project={editingProject} onDone={() => navigate('myresearch')} />;
     if (n === 'chat')         return <Chat initialConvId={chatConvId} />;
-    if (n === 'myresearch')   return <MyResearch onNew={() => navigate('new')} onDetail={handleDetail} />;
+    if (n === 'myresearch')   return <MyResearch onNew={() => navigate('new')} onDetail={handleDetail} onEdit={handleEdit} />;
     return <Dashboard onDetail={handleDetail} />;
   };
 

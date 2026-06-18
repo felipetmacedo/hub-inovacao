@@ -2,7 +2,7 @@ import { useMyProjects } from '../../hooks/useMyProjects';
 import { useProjectMutations } from '../../hooks/useProjectMutations';
 import { StatusBadge } from '../shared/StatusBadge';
 
-export function MyResearch({ onNew, onDetail }) {
+export function MyResearch({ onNew, onDetail, onEdit }) {
   const { projects, loading, reload } = useMyProjects();
   const { hideProject }               = useProjectMutations();
 
@@ -56,7 +56,7 @@ export function MyResearch({ onNew, onDetail }) {
                 {p.status === 'published' && (
                   <button onClick={() => onDetail(p)} style={{ padding: '7px 14px', borderRadius: 6, border: '1px solid rgba(0,96,224,0.25)', background: 'rgba(0,96,224,0.06)', color: '#0060e0', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit', fontWeight: 600 }}>Ver</button>
                 )}
-                <button style={{ padding: '7px 14px', borderRadius: 6, border: '1px solid rgba(0,60,180,0.15)', background: '#ffffff', color: '#6b7fa3', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit' }}>Editar</button>
+                <button onClick={() => onEdit(p)} style={{ padding: '7px 14px', borderRadius: 6, border: '1px solid rgba(0,60,180,0.15)', background: '#ffffff', color: '#6b7fa3', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit' }}>Editar</button>
                 <button onClick={() => hide(p.id)} style={{ padding: '7px 14px', borderRadius: 6, border: '1px solid rgba(220,38,38,0.2)', background: 'rgba(220,38,38,0.04)', color: '#dc2626', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit' }}>Ocultar</button>
               </div>
             </div>
