@@ -13,6 +13,9 @@ export function Dashboard({ onDetail }) {
 
   const setFilter = (k, v) => setFilters(f => ({ ...f, [k]: f[k] === v ? '' : v }));
 
+  const statsInstituicoes = new Set(projects.map(p => p.institution)).size;
+  const statsConexoes     = projects.reduce((s, p) => s + (p.connections_count || 0), 0);
+
   return (
     <div style={{ flex: 1, overflow: 'auto', background: '#f4f8ff', width: '100%' }}>
       <div style={{ background: '#ffffff', borderBottom: '1px solid rgba(0,60,180,0.1)', padding: mobile ? '14px 16px' : '28px 32px 22px' }}>
@@ -22,7 +25,7 @@ export function Dashboard({ onDetail }) {
             <p style={{ margin: '4px 0 0', fontSize: mobile ? 12 : 14, color: '#6b7fa3' }}>Conhecimento acadêmico de Recife, aberto para conexões</p>
           </div>
           <div style={{ display: 'flex', gap: mobile ? 16 : 24 }}>
-            {[[String(projects.length), 'Pesquisas'], ['3', 'Instituições'], ['27', 'Conexões']].map(([n, l]) => (
+            {[[String(projects.length), 'Pesquisas'], [String(statsInstituicoes), 'Instituições'], [String(statsConexoes), 'Conexões']].map(([n, l]) => (
               <div key={l} style={{ textAlign: 'center' }}>
                 <div style={{ fontSize: mobile ? 16 : 22, fontWeight: 800, color: '#0060e0' }}>{n}</div>
                 <div style={{ fontSize: 10, color: '#6b7fa3' }}>{l}</div>

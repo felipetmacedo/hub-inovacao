@@ -36,7 +36,7 @@ export function ResearchCard({ project, onClick }) {
         <Avatar initials={project.researcher.avatar} size={24} />
         <span style={{ fontSize: 12, color: '#6b7fa3', flex: 1 }}>{project.researcher.name}</span>
         <span style={{ fontSize: 11, color: '#6b7fa3' }}>👁 {project.views}</span>
-        <span style={{ fontSize: 11, color: '#059669', fontWeight: 600 }}>🔗 {project.connections}</span>
+        <span style={{ fontSize: 11, color: '#059669', fontWeight: 600 }}>🔗 {project.connections_count || 0}</span>
       </div>
     </div>
   );

@@ -12,6 +12,7 @@ export function Chat({ initialConvId }) {
   const [activeId, setActiveId] = useState(initialConvId || null);
   const [input, setInput]       = useState('');
   const [notif, setNotif]       = useState(null);
+  const [sendError, setSendError] = useState('');
   const messagesEndRef           = useRef(null);
 
   // Define a conversa ativa assim que as conversas carregarem
@@ -40,10 +41,13 @@ export function Chat({ initialConvId }) {
     if (!input.trim()) return;
     const text = input;
     setInput('');
+    setSendError('');
     try {
       await sendMessage(text);
     } catch (err) {
       console.error('Erro ao enviar mensagem:', err);
+      setSendError('Falha ao enviar. Verifique sua conexão e tente novamente.');
+      setInput(text); // restaura o texto para o usuário não perder
     }
   };
 
@@ -152,6 +156,12 @@ export function Chat({ initialConvId }) {
               <div ref={messagesEndRef} />
             </div>
 
+            {sendError && (
+              <div style={{ padding: '8px 24px', background: 'rgba(220,38,38,0.07)', borderTop: '1px solid rgba(220,38,38,0.18)', fontSize: 12, color: '#dc2626', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span>⚠ {sendError}</span>
+                <button onClick={() => setSendError('')} style={{ background: 'none', border: 'none', color: '#dc2626', cursor: 'pointer', fontSize: 14, padding: 0, lineHeight: 1 }}>✕</button>
+              </div>
+            )}
             <div style={{ padding: '14px 24px', borderTop: '1px solid rgba(0,60,180,0.1)', background: '#ffffff', display: 'flex', gap: 10, alignItems: 'flex-end' }}>
               <textarea
                 value={input}

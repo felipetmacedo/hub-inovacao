@@ -20,18 +20,9 @@ export function GovDashboard({ onApprovals, onDetail }) {
   return (
     <div style={{ flex: 1, overflow: 'auto', background: '#f4f8ff', width: '100%' }}>
       <div style={{ background: '#ffffff', borderBottom: '1px solid rgba(0,60,180,0.1)', padding: '22px 32px' }}>
-        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between' }}>
-          <div>
-            <h1 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: '#0d1f3c', letterSpacing: '-0.4px' }}>Painel do Gestor</h1>
-            <p style={{ margin: '5px 0 0', fontSize: 13, color: '#6b7fa3' }}>Visão geral do ecossistema de inovação de Recife</p>
-          </div>
-          <div style={{ display: 'flex', gap: 6 }}>
-            {['Semana', 'Mês', 'Ano'].map((t, i) => (
-              <button key={t} style={{ padding: '6px 14px', borderRadius: 20, border: `1px solid ${i === 1 ? '#0060e0' : 'rgba(0,60,180,0.15)'}`, background: i === 1 ? 'rgba(0,96,224,0.1)' : '#fff', color: i === 1 ? '#0060e0' : '#6b7fa3', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit', fontWeight: i === 1 ? 600 : 400 }}>
-                {t}
-              </button>
-            ))}
-          </div>
+        <div>
+          <h1 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: '#0d1f3c', letterSpacing: '-0.4px' }}>Painel do Gestor</h1>
+          <p style={{ margin: '5px 0 0', fontSize: 13, color: '#6b7fa3' }}>Visão geral do ecossistema de inovação de Recife</p>
         </div>
       </div>
 

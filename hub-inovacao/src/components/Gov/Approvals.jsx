@@ -4,9 +4,7 @@ import { useApprovals } from '../../hooks/useApprovals';
 
 export function Approvals() {
   const { items, loading, approve, reject } = useApprovals();
-  const [expanded, setExpanded] = useState(null);
-  const [feedback, setFeedback] = useState({});
-  const [done, setDone]         = useState([]);
+  const [done, setDone] = useState([]);
   const [error, setError]       = useState('');
 
   const decide = async (item, status) => {
@@ -70,34 +68,17 @@ export function Approvals() {
                           </div>
                         )}
                       </div>
-                      <div style={{ display: 'flex', gap: 8, flexShrink: 0, flexDirection: 'column', alignItems: 'flex-end' }}>
-                        <div style={{ display: 'flex', gap: 8 }}>
-                          <button onClick={() => decide(item, 'rejected')}
-                            style={{ padding: '8px 16px', borderRadius: 7, border: '1px solid rgba(220,38,38,0.3)', background: 'rgba(220,38,38,0.06)', color: '#dc2626', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
-                            ✕ Reprovar
-                          </button>
-                          <button onClick={() => decide(item, 'approved')}
-                            style={{ padding: '8px 16px', borderRadius: 7, border: 'none', background: 'linear-gradient(135deg,#3b8eff,#0040cc)', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
-                            ✓ Aprovar
-                          </button>
-                        </div>
-                        <button onClick={() => setExpanded(expanded === item.id ? null : item.id)}
-                          style={{ background: 'transparent', border: 'none', color: '#0060e0', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit', fontWeight: 600 }}>
-                          {expanded === item.id ? '▲ Ocultar feedback' : '▼ Adicionar feedback'}
+                      <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                        <button onClick={() => decide(item, 'rejected')}
+                          style={{ padding: '8px 16px', borderRadius: 7, border: '1px solid rgba(220,38,38,0.3)', background: 'rgba(220,38,38,0.06)', color: '#dc2626', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+                          ✕ Reprovar
+                        </button>
+                        <button onClick={() => decide(item, 'approved')}
+                          style={{ padding: '8px 16px', borderRadius: 7, border: 'none', background: 'linear-gradient(135deg,#3b8eff,#0040cc)', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+                          ✓ Aprovar
                         </button>
                       </div>
                     </div>
-                    {expanded === item.id && (
-                      <div style={{ padding: '0 20px 16px', borderTop: '1px solid rgba(0,60,180,0.07)' }}>
-                        <div style={{ fontSize: 11, fontWeight: 700, color: '#6b7fa3', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6, marginTop: 14 }}>Feedback para o pesquisador</div>
-                        <textarea
-                          value={feedback[item.id] || ''}
-                          onChange={e => setFeedback(f => ({ ...f, [item.id]: e.target.value }))}
-                          placeholder="Descreva os ajustes necessários ou observações para o pesquisador..."
-                          style={{ width: '100%', background: '#f7faff', border: '1px solid rgba(0,60,180,0.15)', borderRadius: 8, padding: '10px 12px', color: '#0d1f3c', fontSize: 13, outline: 'none', fontFamily: 'inherit', resize: 'vertical', minHeight: 80, boxSizing: 'border-box' }}
-                        />
-                      </div>
-                    )}
                   </div>
                 ))}
               </>

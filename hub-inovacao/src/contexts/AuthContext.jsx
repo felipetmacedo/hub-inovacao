@@ -9,12 +9,15 @@ export function AuthProvider({ children }) {
 
   // Carrega perfil do usuário autenticado
   const loadProfile = async (userId) => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', userId)
       .single();
-    setProfile(data);
+    if (error) {
+      console.error('[AuthContext] Erro ao carregar perfil:', error.message);
+    }
+    setProfile(data ?? null);
   };
 
   // Observa mudanças de sessão (login, logout, refresh de token)

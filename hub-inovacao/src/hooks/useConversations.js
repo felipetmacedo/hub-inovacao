@@ -30,13 +30,13 @@ export function useConversations() {
   const startConversation = async (project) => {
     if (!profile?.id) throw new Error('Usuário não autenticado');
 
-    // Verifica se já existe
+    // Verifica se já existe (maybeSingle não lança erro se não encontrar)
     const { data: existing } = await supabase
       .from('conversations')
       .select('*')
       .eq('project_id', project.id)
       .eq('org_user_id', profile.id)
-      .single();
+      .maybeSingle();
 
     if (existing) return existing;
 

@@ -262,12 +262,19 @@ export function NewResearch({ onDone, project }) {
           <button onClick={() => step > 1 ? setStep(s => s - 1) : null} style={{ ...ws.btnSecondary, visibility: step === 1 ? 'hidden' : 'visible' }}>← Anterior</button>
           {step < 5
             ? (() => {
+                const step1Blocked = step === 1 && (!form.title.trim() || !form.area || !form.type);
                 const step3Blocked = step === 3 && (!aiDone || !form.simplified || form.simplified.trim().length < 20);
+                const blocked = step1Blocked || step3Blocked;
+                const title = step1Blocked
+                  ? 'Preencha título, área e tipo antes de continuar.'
+                  : step3Blocked
+                  ? 'Gere ou edite a versão simplificada antes de continuar.'
+                  : undefined;
                 return (
                   <button
-                    onClick={() => step3Blocked ? null : setStep(s => s + 1)}
-                    style={{ ...ws.btn, opacity: step3Blocked ? 0.4 : 1, cursor: step3Blocked ? 'not-allowed' : 'pointer' }}
-                    title={step3Blocked ? 'Gere ou edite a versão simplificada antes de continuar.' : undefined}
+                    onClick={() => blocked ? null : setStep(s => s + 1)}
+                    style={{ ...ws.btn, opacity: blocked ? 0.4 : 1, cursor: blocked ? 'not-allowed' : 'pointer' }}
+                    title={title}
                   >Próximo →</button>
                 );
               })()
